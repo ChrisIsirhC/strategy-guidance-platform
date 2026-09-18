@@ -28,48 +28,60 @@ def safely_embed_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
-def navigation_script(view: str) -> str:
-    """Navigate out of the Streamlit component iframe during user activation."""
-    return f"""
+def navigation_script() -> str:
+    """Switch documents inside Streamlit's sandboxed component iframe.
+
+    Streamlit deliberately prevents a component iframe from navigating the
+    surrounding application.  Keeping the two static documents in this frame
+    makes navigation reliable both in Streamlit Cloud and locally.
+    """
+    return """
     <script>
-      window.__strategyNavigate = function(query) {{
-        // Streamlit blocks a synthetic target=_top anchor click inside its
-        // sandboxed component frame.  This direct assignment runs in the
-        // original user click/keyboard event and retains its activation.
-        window.top.location.href = new URL('/?view=' + query, document.baseURI).href;
-      }};
-      document.addEventListener('click', function(event) {{
+      window.__strategyNavigate = function(query) {
+        const [view, ...params] = String(query || 'home').split('&');
+        const nextDocument = window.__strategyPages && window.__strategyPages[view];
+        if (!nextDocument) return;
+        // The app scripts read this exactly like their ordinary URL query.
+        window.__STRATEGY_ROUTE_QUERY__ = params.join('&');
+        document.open();
+        document.write(nextDocument);
+        document.close();
+      };
+      document.addEventListener('click', function(event) {
         const link = event.target.closest('a[data-strategy-route]');
         if (!link) return;
         event.preventDefault();
         window.__strategyNavigate(link.dataset.strategyRoute);
-      }});
+      });
     </script>
     """
 
 
-def route_markup(html: str, view: str) -> str:
-    home = 'data-strategy-route="home" href="/?view=home" target="_top"'
-    archive = 'data-strategy-route="archive" href="/?view=archive" target="_top"'
+def route_markup(html: str) -> str:
+    home = 'data-strategy-route="home" href="#home"'
+    archive = 'data-strategy-route="archive" href="#archive"'
     html = html.replace('href="./index.html"', home)
     html = html.replace('href="./archive.html"', archive)
     return html
 
 
-def page_document(view: str) -> str:
+def prepared_page(view: str) -> str:
+    """Prepare one page; the shell supplies shared data and the router."""
     page = "index.html" if view == "home" else "archive.html"
     code = "app.js" if view == "home" else "archive.js"
-    html = route_markup(read(page), view)
+    html = route_markup(read(page))
     css = read("style.css")
     script = read(code)
-    data = json.loads(read("site-data.json"))
-    data_literal = safely_embed_json(data)
 
     # Components cannot expose sibling static files.  Supply the immutable
     # data bundle in memory and retain the exact front-end rendering logic.
     script = script.replace(
         "fetch('./site-data.json')",
         "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
+    )
+    script = script.replace(
+        "new URLSearchParams(window.location.search)",
+        "new URLSearchParams(window.__STRATEGY_ROUTE_QUERY__ || window.location.search)",
     )
     if view == "home":
         script = script.replace(
@@ -83,9 +95,22 @@ def page_document(view: str) -> str:
         )
 
     html = html.replace('<link rel="stylesheet" href="./style.css" />', f"<style>{css}</style>")
-    html = html.replace(f'<script src="./{code}"></script>', f"<script>window.__STRATEGY_DATA__={data_literal};</script><script>{script}</script>{navigation_script(view)}")
+    # ``document.write`` reuses the component window.  Give each route script
+    # its own lexical scope so revisiting a route cannot redeclare top-level
+    # ``const`` bindings from an earlier visit.
+    scoped_script = f"(() => {{\n{script}\n}})();"
+    html = html.replace(f'<script src="./{code}"></script>', f"<script>{scoped_script}</script>{navigation_script()}")
     html = html.replace('<script src="./update-client.js"></script>', "")
     return html
+
+
+def page_document(view: str) -> str:
+    """Bootstrap both static routes inside the Streamlit component frame."""
+    data_literal = safely_embed_json(json.loads(read("site-data.json")))
+    pages_literal = safely_embed_json({"home": prepared_page("home"), "archive": prepared_page("archive")})
+    initial = prepared_page(view)
+    bootstrap = f"<script>window.__STRATEGY_DATA__={data_literal};window.__strategyPages={pages_literal};window.__STRATEGY_ROUTE_QUERY__='';</script>"
+    return initial.replace("</head>", f"{bootstrap}</head>", 1)
 
 
 st.set_page_config(page_title="策略指引 · 原文图谱", page_icon="◌", layout="wide", initial_sidebar_state="collapsed")
