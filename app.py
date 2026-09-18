@@ -29,18 +29,14 @@ def safely_embed_json(value: object) -> str:
 
 
 def navigation_script(view: str) -> str:
-    """Navigation needs to leave the Streamlit component iframe."""
-    target = "archive" if view == "home" else "home"
+    """Navigate out of the Streamlit component iframe during user activation."""
     return f"""
     <script>
       window.__strategyNavigate = function(query) {{
-        const path = '/?view=' + query;
-        const anchor = document.createElement('a');
-        anchor.href = path;
-        anchor.target = '_top';
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
+        // Streamlit blocks a synthetic target=_top anchor click inside its
+        // sandboxed component frame.  This direct assignment runs in the
+        // original user click/keyboard event and retains its activation.
+        window.top.location.href = new URL('/?view=' + query, document.baseURI).href;
       }};
       document.addEventListener('click', function(event) {{
         const link = event.target.closest('a[data-strategy-route]');
