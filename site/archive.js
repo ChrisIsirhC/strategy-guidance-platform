@@ -50,6 +50,17 @@ function setupArchiveSearch() { const input = document.querySelector('#nav-searc
 function setupArchiveMotion() { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; if (!window.gsap) { document.querySelectorAll('.archive-page-head > *, .archive-sidebar').forEach((element, index) => { element.style.setProperty('--archive-delay', `${index * 90}ms`); element.classList.add('archive-enter'); }); return; } if (window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger); gsap.from('.archive-page-head > *', { y: 22, opacity: 0, duration: .76, stagger: .1, ease: 'power4.out' }); gsap.from('.archive-sidebar', { y: 18, opacity: 0, duration: .7, delay: .12, ease: 'power3.out' }); }
 async function startArchive() {
   archiveApp.els = { calendar: document.querySelector('#history-calendar'), reading: document.querySelector('#archive-reading'), footer: document.querySelector('#archive-footer-meta'), backTop: document.querySelector('#back-to-top') }; setupArchiveSearch();
+  // Keep the desktop control beside its calendar.  On a phone, place it at
+  // body level so it cannot inherit the calendar's animated/sticky container:
+  // fixed positioning then means the whole viewport, not the calendar panel.
+  const backTopHome = archiveApp.els.backTop.parentElement;
+  const mobileLayout = window.matchMedia('(max-width: 620px)');
+  const placeBackTop = () => {
+    const target = mobileLayout.matches ? document.body : backTopHome;
+    if (archiveApp.els.backTop.parentElement !== target) target.append(archiveApp.els.backTop);
+  };
+  placeBackTop();
+  mobileLayout.addEventListener('change', placeBackTop);
   try { const response = await fetch('./site-data.json'); if (!response.ok) throw new Error('未能读取展示数据'); archiveApp.data = await response.json(); archiveApp.knownManagers = archiveKnownManagers(archiveApp.data); const params = new URLSearchParams(window.location.search); archiveApp.dateKey = params.get('date') && archiveApp.data.documents.some(documentData => documentData.dateKey === params.get('date')) ? params.get('date') : archiveApp.data.documents[0]?.dateKey; archiveApp.month = archiveMonth(archiveApp.dateKey); archiveApp.mode = params.get('mode') === 'strategy' ? 'strategy' : 'date'; archiveApp.strategy = params.get('strategy') || ''; archiveApp.els.footer.textContent = `${archiveApp.data.documents.length} 份原始日表 · ${archiveApp.data.strategies.length} 类策略`; syncMode(); historyCalendar(); renderReading(); setupArchiveMotion(); } catch (error) { archiveApp.els.reading.innerHTML = `<p class="archive-empty">展示数据暂不可用：${archiveEsc(error.message)}</p>`; }
   document.querySelectorAll('[data-archive-mode]').forEach(button => button.addEventListener('click', () => { archiveApp.mode = button.dataset.archiveMode; syncMode(); renderReading(); }));
   document.addEventListener('click', event => document.querySelectorAll('.custom-select.is-open').forEach(root => { if (!root.contains(event.target)) { root.classList.remove('is-open'); root.querySelector('.custom-select-menu').hidden = true; root.querySelector('.custom-select-trigger').setAttribute('aria-expanded', 'false'); } }));
