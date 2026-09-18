@@ -402,3 +402,14 @@ body .archive-reading-enter :is(.archive-entry,.series-day):nth-child(4){animati
 body .archive-reading-enter :is(.archive-entry,.series-day):nth-child(n+5){animation-delay:180ms}
 @keyframes archive-enter{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:620px){body .nav-search-compact{width:48px;padding:4px 6px}body .nav-search-compact:hover,body .nav-search-compact:focus-within{width:min(224px,54vw)}body .nav-search-compact:hover input,body .nav-search-compact:focus-within input{max-width:132px}}
+
+/* On phones the calendar belongs above the reading flow, never as a narrow
+   pseudo-sidebar.  The return control stays independently reachable. */
+@media(max-width:620px){
+  body .archive-workspace{display:block}
+  body .archive-sidebar{position:static;width:100%;margin:0 0 22px}
+  body .archive-sidebar .calendar-panel{width:100%}
+  body .archive-reading{width:100%;min-width:0}
+  body .back-to-top{position:fixed;z-index:30;left:14px;bottom:14px;margin:0;box-shadow:0 10px 26px rgba(24,38,28,.14)}
+  body .back-to-top[hidden]{display:none}
+}
