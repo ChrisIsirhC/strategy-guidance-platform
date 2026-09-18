@@ -1,0 +1,36 @@
+name: 更新策略日表
+
+on:
+  schedule:
+    # GitHub Actions uses UTC: 00:00 / 10:00 are 08:00 / 18:00 in China.
+    - cron: "0 0,10 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: strategy-data-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: 同步并重建展示数据
+        run: python cloud_sync.py
+      - name: 提交发生变化的数据包
+        run: |
+          if git diff --quiet -- site/site-data.json data/cloud_history data/cloud_sync_state.json; then
+            echo "No source change."
+            exit 0
+          fi
+          git config user.name "strategy-guidance-bot"
+          git config user.email "strategy-guidance-bot@users.noreply.github.com"
+          git add site/site-data.json data/cloud_history data/cloud_sync_state.json
+          git commit -m "chore: refresh strategy guidance data"
+          git push

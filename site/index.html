@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>策略指引 · 原文图谱</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,650&family=Noto+Serif+SC:wght@500;600;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <aside id="update-toast" class="update-toast" hidden aria-live="polite"><img class="material-icon" src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/sync/default/24px.svg" alt="" /><span data-update-message>正在检查策略日表</span></aside>
+    <header class="top-nav">
+      <a class="brand" href="./index.html" aria-label="策略指引首页"><span class="brand-orbit" aria-hidden="true"></span><span class="brand-name">策略指引</span></a>
+      <nav class="nav-routes" aria-label="主导航"><a class="nav-route is-current" href="./index.html">每日策略</a><a class="nav-route" href="./archive.html">历史底稿</a></nav>
+      <div class="nav-right">
+        <div class="nav-search nav-search-compact">
+          <button id="nav-search-open" class="nav-search-open" type="button" aria-label="展开搜索"><img class="material-icon" data-icon="search" alt="" /></button>
+          <input id="nav-search-input" type="search" autocomplete="off" placeholder="搜索原文" aria-label="搜索策略或原文" />
+          <button id="nav-search-submit" type="button" aria-label="执行搜索"><img class="material-icon" data-icon="arrow_forward" alt="" /></button>
+          <div id="search-suggestions" class="search-suggestions" hidden></div>
+        </div>
+      </div>
+    </header>
+
+    <main id="top" class="page-shell">
+      <div id="home-view">
+        <section class="daily-layout" aria-labelledby="page-title">
+          <article class="daily-card">
+            <div class="daily-copy">
+              <p class="eyebrow"><span class="signal-dot"></span><span id="hero-date">读取当日底稿</span></p>
+              <h1 id="page-title">每日策略</h1>
+              <a class="primary-action" href="#atlas">查看当日图谱 <span class="button-icon"><img class="material-icon" data-icon="arrow_forward" alt="" /></span></a>
+            </div>
+            <div class="daily-orbit" aria-hidden="true"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="orbit-core" id="hero-coverage">—</span></div>
+          </article>
+          <aside class="day-archive-card" aria-label="日表已归档">
+            <p class="eyebrow">日表已归档</p>
+            <strong id="archive-count">—</strong><span>份原始日表</span>
+            <div id="archive-mini" class="archive-mini"></div>
+            <a class="archive-link" href="./archive.html">查看历史底稿 <img class="material-icon" data-icon="arrow_forward" alt="" /></a>
+          </aside>
+        </section>
+
+        <section id="atlas" class="atlas-section" aria-labelledby="atlas-title">
+          <div class="section-heading">
+            <div><h2 id="atlas-title">当日策略图谱</h2></div>
+            <div class="calendar-picker">
+              <button id="date-calendar-trigger" class="date-control" aria-expanded="false" aria-controls="date-calendar-popover"><img class="material-icon" data-icon="calendar_month" alt="" /><span id="date-calendar-label">选择日期</span><img class="material-icon" data-icon="expand_more" alt="" /></button>
+              <div id="date-calendar-popover" class="calendar-popover" hidden></div>
+            </div>
+          </div>
+          <div class="atlas-workspace">
+            <div id="atlas-grid" class="atlas-grid" aria-live="polite"></div>
+            <aside id="reader-dock" class="reader-dock" aria-live="polite"></aside>
+          </div>
+        </section>
+
+        <section id="archive" class="archive-section" aria-labelledby="archive-title">
+          <div class="archive-heading"><div><h2 id="archive-title">历史底稿</h2><p>以月份浏览已归档的日表。</p></div><a class="archive-link archive-heading-link" href="./archive.html">进入历史底稿 <img class="material-icon" data-icon="arrow_forward" alt="" /></a></div>
+          <div id="archive-calendar" class="archive-calendar"></div>
+          <a class="archive-expand" href="./archive.html">查看全部历史底稿 <img class="material-icon" data-icon="arrow_forward" alt="" /></a>
+        </section>
+      </div>
+
+      <section id="search-page" class="search-page" hidden aria-labelledby="search-page-title">
+        <button class="back-button" data-close-search><img class="material-icon" data-icon="arrow_back" alt="" />返回图谱</button>
+        <h1 id="search-page-title">搜索原文</h1><p id="search-page-summary"></p>
+        <div id="search-page-results" class="search-page-results"></div>
+      </section>
+    </main>
+    <footer class="site-footer"><span>策略指引</span><span id="footer-meta">数据包加载中</span></footer>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="./app.js"></script>
+    <script src="./update-client.js"></script>
+  </body>
+</html>

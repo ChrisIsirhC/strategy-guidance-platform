@@ -1,0 +1,17 @@
+# Python and Streamlit runtime artifacts
+__pycache__/
+*.py[cod]
+.streamlit/secrets.toml
+
+# Local acquisition evidence: it can be regenerated, is large, and must not
+# leave the workstation.  The lean cloud state is intentionally committed.
+data/qq_sheet_history/
+data/qq_sheet_smoketest/
+data/qq_sheet_snapshots/
+data/strategy_update.lock
+data/update_state.json
+
+# Local editor and operating-system files
+.DS_Store
+Thumbs.db
+.vscode/

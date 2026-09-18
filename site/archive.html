@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>历史底稿 · 策略指引</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,650&family=Noto+Serif+SC:wght@500;600;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <aside id="update-toast" class="update-toast" hidden aria-live="polite"><img class="material-icon" src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/sync/default/24px.svg" alt="" /><span data-update-message>正在检查策略日表</span></aside>
+    <header class="top-nav">
+      <a class="brand" href="./index.html" aria-label="策略指引首页"><span class="brand-orbit" aria-hidden="true"></span><span class="brand-name">策略指引</span></a>
+      <nav class="nav-routes" aria-label="主导航"><a class="nav-route" href="./index.html">每日策略</a><a class="nav-route is-current" href="./archive.html">历史底稿</a></nav>
+      <div class="nav-right"><div class="nav-search nav-search-compact"><button id="nav-search-open" class="nav-search-open" type="button" aria-label="展开搜索"><img class="material-icon" src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/search/default/24px.svg" alt="" /></button><input id="nav-search-input" type="search" autocomplete="off" placeholder="搜索原文" aria-label="搜索策略或原文" /><button id="nav-search-submit" type="button" aria-label="执行搜索"><img class="material-icon" src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/arrow_forward/default/24px.svg" alt="" /></button></div></div>
+    </header>
+    <main class="page-shell archive-page">
+      <header class="archive-page-head">
+        <div><h1>历史底稿</h1><p>按日期查看当日完整策略，或沿同一策略阅读全部已归档观点。</p></div>
+        <div class="archive-mode-tabs" aria-label="历史底稿查看方式"><button class="is-active" data-archive-mode="date">按日期</button><button data-archive-mode="strategy">按策略</button></div>
+      </header>
+      <div class="archive-workspace">
+        <aside class="archive-sidebar"><div id="history-calendar"></div><button id="back-to-top" class="back-to-top" hidden><img class="material-icon" src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/arrow_upward/default/24px.svg" alt="" />返回顶部</button></aside>
+        <section id="archive-reading" class="archive-reading" aria-live="polite"></section>
+      </div>
+    </main>
+    <footer class="site-footer"><span>策略指引</span><span id="archive-footer-meta">数据包加载中</span></footer>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="./archive.js"></script>
+    <script src="./update-client.js"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>策略指引 · v0 存档</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#today"><span class="brand-mark">S</span><span><strong>策略指引</strong><small>STRATEGY GUIDANCE</small></span></a>
+      <nav><button data-mode="today" class="is-active">最新策略指引</button><button data-mode="history">历史回溯</button><button data-mode="compare">原文对照</button></nav>
+      <label class="search"><span>搜索</span><input id="search-input" type="search" placeholder="搜索策略或原文" /></label>
+    </header>
+    <main class="workspace">
+      <aside class="sidebar"><div class="side-title">策略目录 <small id="strategy-count"></small></div><div id="strategy-list"></div><p>历史版本 v0<br />所有内容均按抓取底稿原文展示</p></aside>
+      <section class="content">
+        <div class="context"><div class="mode-tabs"><button data-mode="today" class="is-active">最新</button><button data-mode="history">日期</button><button data-mode="compare">对照</button></div><label>日期 <select id="date-select"></select></label></div>
+        <div id="today-view"></div><div id="history-view" hidden></div><div id="compare-view" hidden></div><div id="search-view" hidden></div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
