@@ -35,6 +35,14 @@ def safely_embed_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
+def local_update_status() -> dict[str, object]:
+    state_path = ROOT / "data" / "update_state.json"
+    try:
+        return json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"inProgress": False, "lastResult": "", "updatedAt": ""}
+
+
 def navigation_script() -> str:
     """Switch documents inside Streamlit's sandboxed component iframe.
 
@@ -60,6 +68,26 @@ def navigation_script() -> str:
         event.preventDefault();
         window.__strategyNavigate(link.dataset.strategyRoute);
       });
+    </script>
+    """
+
+
+def frame_height_script() -> str:
+    """Let the Streamlit component grow with the page instead of nesting scrollbars."""
+    return """
+    <script>
+      (() => {
+        let lastHeight = 0;
+        const resize = () => {
+          const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+          if (height === lastHeight) return;
+          lastHeight = height;
+          window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setFrameHeight', height}, '*');
+        };
+        new ResizeObserver(resize).observe(document.documentElement);
+        window.addEventListener('load', resize);
+        resize();
+      })();
     </script>
     """
 
@@ -108,7 +136,7 @@ def prepared_page(view: str) -> str:
     scoped_script = f"(() => {{\n{script}\n}})();"
     html = html.replace(f'<script src="./{code}"></script>', f"<script>{scoped_script}</script>{navigation_script()}")
     html = html.replace('<script src="./update-client.js"></script>', "")
-    return html
+    return html.replace('</body>', f'{frame_height_script()}</body>', 1)
 
 
 def page_document(view: str) -> str:
@@ -125,7 +153,18 @@ def prototype_document(folder: Path) -> str:
     html = read_from(folder, "index.html")
     script = read_from(folder, "app.js")
     css = read_from(folder, "style.css")
+    # The strategy timeline is long; keep its calendar pinned beneath the
+    # navigation so users can jump between dates without returning to top.
+    css += """
+    body .calendar-control.is-strategy-history { position: fixed; top: 92px; right: max(28px, calc((100vw - 1520px) / 2 + 42px)); z-index: 7; }
+    @media (max-width: 760px) {
+      body .calendar-control.is-strategy-history { position: fixed; top: 76px; left: 12px; right: 12px; width: auto; z-index: 7; }
+      .calendar-control.is-strategy-history .date-calendar { width: 100%; box-shadow: 0 14px 36px rgba(92,38,41,.14); }
+      .page-title-with-calendar:has(.calendar-control.is-strategy-history) + .timeline { padding-top: 268px; }
+    }
+    """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
+    update_status_literal = safely_embed_json(local_update_status())
     script = script.replace(
         "fetch('../site/site-data.json')",
         "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
@@ -138,9 +177,9 @@ def prototype_document(folder: Path) -> str:
     html = html.replace('<link rel="stylesheet" href="./style.css" />', f"<style>{css}</style>")
     html = html.replace(
         '<script src="./app.js"></script>',
-        f"<script>window.__STRATEGY_DATA__={data_literal};</script><script>{script}</script>",
+        f"<script>window.__STRATEGY_DATA__={data_literal};window.__STRATEGY_UPDATE_STATUS__={update_status_literal};</script><script>{script}</script>",
     )
-    return html
+    return html.replace('</body>', f'{frame_height_script()}</body>', 1)
 
 
 def requested_product() -> str:
@@ -175,4 +214,4 @@ elif product == "prototype":
     document = prototype_document(PROTOTYPE_ARCHIVE)
 else:
     document = prototype_document(PROTOTYPE_MAIN)
-components.html(document, height=1280, scrolling=True)
+components.html(document, height=1280, scrolling=False)
