@@ -99,8 +99,21 @@ class UpdateManager:
     def maybe_start(self, trigger: str) -> bool:
         current_slot = self.slot()
         with self._thread_lock:
-            if self._state.get("inProgress") or self._state.get("lastSlot") == current_slot:
+            if self._state.get("inProgress"):
                 return False
+            same_slot = self._state.get("lastSlot") == current_slot
+            # A successful/no-change run consumes its time slot.  A failure is
+            # different: retry it on a later visit, but hold a short cool-down
+            # so several simultaneous page loads do not hammer Tencent Docs.
+            if same_slot and self._state.get("lastResult") != "failed":
+                return False
+            if same_slot and self._state.get("lastResult") == "failed":
+                try:
+                    failed_at = datetime.fromisoformat(str(self._state.get("updatedAt") or ""))
+                    if now() - failed_at < timedelta(minutes=5):
+                        return False
+                except ValueError:
+                    pass
             if self._worker and self._worker.is_alive():
                 return False
             self._state.update({
@@ -260,11 +273,24 @@ class UpdateManager:
             return
         try:
             os.write(descriptor, f"pid={os.getpid()} started={now().isoformat()}".encode("utf-8"))
-            self._save_state(message="正在同步最新策略日表")
-            result, message = self._sync_once()
+            # Network requests to Tencent Docs can occasionally fail
+            # transiently.  Retry once within the same run; only publish a
+            # failed state after both attempts fail.
+            last_error: Exception | None = None
+            result = message = None
+            for attempt in range(2):
+                try:
+                    self._save_state(message="正在同步最新策略日表" if attempt == 0 else "首次检查失败，正在重新检查策略日表")
+                    result, message = self._sync_once()
+                    break
+                except Exception as error:  # stored below only if retry also fails
+                    last_error = error
+            if result is None or message is None:
+                assert last_error is not None
+                raise last_error
             self._save_state(inProgress=False, lastSlot=current_slot, lastResult=result, updatedAt=now().isoformat(timespec="seconds"), message=message)
         except Exception as error:
-            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="failed", updatedAt=now().isoformat(timespec="seconds"), message="本次同步失败，展示仍使用上次成功数据", error=f"{type(error).__name__}: {error}")
+            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="failed", updatedAt=now().isoformat(timespec="seconds"), message="日表更新失败，将在下次检查时自动重试", error=f"{type(error).__name__}: {error}")
         finally:
             os.close(descriptor)
             try:

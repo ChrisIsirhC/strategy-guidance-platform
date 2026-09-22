@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body { width: 100%; min-height: 100%; margin: 0; overflow: hidden; }
+      #strategy-frame { display: block; width: 100%; height: 100%; min-height: 100vh; border: 0; }
+    </style>
+  </head>
+  <body>
+    <iframe id="strategy-frame" title="策略指引"></iframe>
+    <script>
+      (() => {
+        const frame = document.getElementById('strategy-frame');
+        const parent = window.parent;
+        const bridge = message => parent.postMessage({ isStreamlitMessage: true, ...message }, '*');
+
+        // This document is a real Streamlit custom component.  The page is
+        // rendered in a child iframe so its long history timeline can report
+        // its height without becoming a second scrolling surface.
+        window.addEventListener('message', event => {
+          const message = event.data || {};
+          if (event.source === frame.contentWindow && message.type === 'streamlit:setFrameHeight') {
+            bridge({ type: 'streamlit:setFrameHeight', height: message.height });
+            return;
+          }
+          if (message.type === 'streamlit:render' && message.args && typeof message.args.document === 'string') {
+            frame.srcdoc = message.args.document;
+          }
+        });
+
+        bridge({ type: 'streamlit:componentReady', apiVersion: 1 });
+      })();
+    </script>
+  </body>
+</html>

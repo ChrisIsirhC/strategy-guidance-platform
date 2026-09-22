@@ -20,18 +20,36 @@ body:has(#history-view:not([hidden])) .content{padding-top:0}body:has(#history-v
 /* History calendar is a page-level layer: it deliberately sits above both
    the small context line and the reading title, rather than joining either
    layout row.  The reserved context height keeps the title clear of it. */
-body:has(#history-view:not([hidden])) .context{min-height:300px;margin-bottom:0;align-items:flex-start}
+body:has(#history-view:not([hidden])) .context{min-height:326px;margin-bottom:0;align-items:flex-start}
 body:has(#history-view:not([hidden])) .context-rule{padding-top:12px}
-body:has(#history-view:not([hidden])) .calendar-control.is-inline{position:fixed;top:78px;right:max(28px,calc((100vw - 1520px)/2 + 42px));z-index:7;width:322px}
+body:has(#history-view:not([hidden])) .calendar-control.is-inline{position:fixed;top:116px;right:max(28px,calc((100vw - 1520px)/2 + 42px));z-index:7;width:322px}
 
 /* The health dot has a separate status lane under the navigation. */
-.update-status-row{position:fixed;z-index:8;top:78px;left:0;right:0;height:28px;pointer-events:none}
-.update-status-row .update-toast{position:absolute;top:7px;right:auto;left:max(262px,calc((100vw - 1520px)/2 + 260px));pointer-events:auto}
+.update-status-row{position:fixed;z-index:8;top:78px;left:0;right:0;height:32px;pointer-events:none}
+.update-status-row .update-toast{position:absolute;top:8px;right:28px;left:auto;pointer-events:auto}
 
 @media(max-width:760px){
-  body:has(#history-view:not([hidden])) .context{min-height:286px}
-  body:has(#history-view:not([hidden])) .calendar-control.is-inline{top:96px;left:12px;right:12px;width:auto}
+  body:has(#history-view:not([hidden])) .context{min-height:316px}
+  body:has(#history-view:not([hidden])) .calendar-control.is-inline{top:102px;left:12px;right:12px;width:auto}
   body:has(.calendar-control.is-strategy-history) #history-view .timeline{padding-top:0}
   .update-status-row{top:66px;height:30px}
   .update-status-row .update-toast{top:8px;left:12px}
+}
+
+/* History keeps two independent layers below the navigation: a narrow update
+   status lane, then the full calendar panel.  Neither participates in the
+   title row or in the timeline's scrolling container. */
+body:has(#history-view:not([hidden])) .content{padding-top:38px}
+body:has(#history-view:not([hidden])) .context{min-height:350px;margin-bottom:0}
+body:has(#history-view:not([hidden])) .calendar-control.is-inline{position:fixed;top:126px;right:max(28px,calc((100vw - 1520px)/2 + 42px));z-index:47;display:block;width:322px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,253,252,.94);box-shadow:0 18px 45px rgba(92,38,41,.13);backdrop-filter:blur(16px)}
+body:has(#history-view:not([hidden])) .calendar-control.is-inline .date-calendar{position:static;display:block;width:100%;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.update-status-row{position:fixed!important;z-index:48!important;top:78px!important;right:0;left:0;height:38px!important;pointer-events:none;background:rgba(255,253,252,.86);border-bottom:1px solid rgba(92,38,41,.08);backdrop-filter:blur(14px)}
+.update-status-row .update-toast{position:absolute!important;top:10px!important;right:28px!important;left:auto!important;pointer-events:auto}
+@media(max-width:760px){
+  body:has(#history-view:not([hidden])) .content{padding-top:36px}
+  body:has(#history-view:not([hidden])) .context{min-height:286px}
+  body:has(#history-view:not([hidden])) .context-rule{display:none}
+  body:has(#history-view:not([hidden])) .calendar-control.is-inline{top:110px;right:12px;left:12px;width:auto}
+  .update-status-row{top:66px!important;height:36px!important}
+  .update-status-row .update-toast{top:10px!important;right:14px!important;left:auto!important}
 }

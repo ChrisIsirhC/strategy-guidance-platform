@@ -20,7 +20,7 @@
         refreshedFor = run;
         window.setTimeout(() => window.location.reload(), 1350);
       } else if (status.lastResult === 'failed' && run !== previousRun) {
-        show(status.message || '同步失败，正在展示上次成功数据', 'failed');
+        show(status.message || '日表更新失败，将自动重试', 'failed');
         window.setTimeout(hide, 6000);
       } else if (!status.inProgress) hide();
       previousRun = run;

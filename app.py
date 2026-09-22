@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parent
 SITE = ROOT / "site"
 PROTOTYPE_MAIN = ROOT / "prototype_main"
 PROTOTYPE_ARCHIVE = ROOT / "prototype_v0"
+STRATEGY_COMPONENT = components.declare_component(
+    "strategy_guidance_shell", path=str(ROOT / "streamlit_component")
+)
 
 
 def read(name: str) -> str:
@@ -178,21 +181,24 @@ def prototype_document(folder: Path) -> str:
     # The strategy timeline is long; keep its calendar pinned beneath the
     # navigation so users can jump between dates without returning to top.
     css += """
-    body:has(#history-view:not([hidden])) .content { padding-top: 0; }
-    body:has(#history-view:not([hidden])) .context { min-height: 300px; margin-bottom: 0; align-items: flex-start; }
+    body:has(#history-view:not([hidden])) .content { padding-top: 38px; }
+    body:has(#history-view:not([hidden])) .context { min-height: 350px; margin-bottom: 0; align-items: flex-start; }
     body:has(#history-view:not([hidden])) .context-rule { padding-top: 12px; }
-    body:has(#history-view:not([hidden])) .calendar-control.is-inline { position: fixed; top: 78px; right: max(28px, calc((100vw - 1520px) / 2 + 42px)); z-index: 7; width: 322px; }
+    body:has(#history-view:not([hidden])) .calendar-control.is-inline { position: fixed; top: 126px; right: max(28px, calc((100vw - 1520px) / 2 + 42px)); z-index: 47; display: block; width: 322px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,253,252,.94); box-shadow: 0 18px 45px rgba(92,38,41,.13); backdrop-filter: blur(16px); }
+    body:has(#history-view:not([hidden])) .calendar-control.is-inline .date-calendar { position: static; display: block; width: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
     body .update-toast { width: 10px; height: 10px; display: block; }
     body .update-toast .update-pulse { display: block; width: 10px; height: 10px; box-shadow: none; }
     body .update-toast:hover, body .update-toast:focus-within { display: flex; }
-    body .update-status-row { position: fixed; z-index: 8; top: 78px; left: 0; right: 0; height: 28px; pointer-events: none; }
-    body .update-status-row .update-toast { position: absolute; top: 7px; right: auto; left: max(262px, calc((100vw - 1520px) / 2 + 260px)); pointer-events: auto; }
+    body .update-status-row { position: fixed; z-index: 48; top: 78px; left: 0; right: 0; height: 38px; pointer-events: none; background: rgba(255,253,252,.86); border-bottom: 1px solid rgba(92,38,41,.08); backdrop-filter: blur(14px); }
+    body .update-status-row .update-toast { position: absolute; top: 10px; right: 28px; left: auto; pointer-events: auto; }
     @media (max-width: 760px) {
+      body:has(#history-view:not([hidden])) .content { padding-top: 36px; }
       body:has(#history-view:not([hidden])) .context { min-height: 286px; }
-      body:has(#history-view:not([hidden])) .calendar-control.is-inline { top: 96px; left: 12px; right: 12px; width: auto; }
+      body:has(#history-view:not([hidden])) .context-rule { display: none; }
+      body:has(#history-view:not([hidden])) .calendar-control.is-inline { top: 110px; left: 12px; right: 12px; width: auto; }
       body:has(.calendar-control.is-strategy-history) #history-view .timeline { padding-top: 0; }
-      body .update-status-row { top: 66px; height: 30px; }
-      body .update-status-row .update-toast { top: 8px; left: 12px; }
+      body .update-status-row { top: 66px; height: 36px; }
+      body .update-status-row .update-toast { top: 10px; right: 14px; left: auto; }
     }
     """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
@@ -246,4 +252,4 @@ elif product == "prototype":
     document = prototype_document(PROTOTYPE_ARCHIVE)
 else:
     document = prototype_document(PROTOTYPE_MAIN)
-components.html(document, height=1280, scrolling=False)
+STRATEGY_COMPONENT(document=document, key=f"strategy-shell-{product}")
