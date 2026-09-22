@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>策略指引 · Logo Motion Study</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,650&family=Noto+Serif+SC:wght@500;600;700;900&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --paper: #f5f4ee;
+        --ink: #0d2d24;
+        --moss: #2d684c;
+        --gold: #b48a42;
+        --gold-soft: #e8d4a9;
+        --line: rgba(13, 45, 36, .14);
+        --display: Geist, "Noto Serif SC", sans-serif;
+        --serif: Newsreader, "Noto Serif SC", serif;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body {
+        min-height: 100dvh;
+        margin: 0;
+        overflow: hidden;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 50% 43%, rgba(228, 214, 176, .34), transparent 28rem),
+          linear-gradient(135deg, #f7f6f1 0%, var(--paper) 48%, #eeeee6 100%);
+        font-family: var(--display);
+      }
+
+      body::before {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        content: "";
+        opacity: .25;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.07'/%3E%3C/svg%3E");
+        mix-blend-mode: multiply;
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 56px));
+        min-height: 100dvh;
+        margin: 0 auto;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        padding: 34px 0 28px;
+      }
+
+      .masthead, .footnote {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+      .masthead { font-size: 12px; letter-spacing: .11em; text-transform: uppercase; }
+      .masthead .label { display: flex; align-items: center; gap: 12px; font-weight: 650; }
+      .masthead .label::before {
+        width: 7px;
+        height: 7px;
+        content: "";
+        border-radius: 50%;
+        background: var(--gold);
+        box-shadow: 0 0 0 5px rgba(180, 138, 66, .12);
+      }
+      .masthead .index { color: rgba(13, 45, 36, .48); font-size: 10px; letter-spacing: .2em; }
+
+      .stage {
+        display: grid;
+        place-items: center;
+        min-height: 0;
+        padding: 20px 0;
+      }
+
+      .logo-button {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: min(58vw, 390px);
+        aspect-ratio: 1;
+        padding: 0;
+        border: 0;
+        color: var(--ink);
+        background: transparent;
+        cursor: pointer;
+        isolation: isolate;
+      }
+      .logo-button:focus-visible { outline: 2px solid var(--gold); outline-offset: 18px; }
+      .logo-button::before {
+        position: absolute;
+        inset: 17%;
+        z-index: -1;
+        content: "";
+        border-radius: 50%;
+        background: rgba(255, 255, 255, .26);
+        box-shadow: 0 22px 70px rgba(32, 59, 45, .12), inset 0 1px 0 rgba(255,255,255,.78);
+        transition: transform .9s cubic-bezier(.32,.72,0,1), box-shadow .9s cubic-bezier(.32,.72,0,1);
+      }
+      .logo-button:hover::before { transform: scale(1.04); box-shadow: 0 30px 84px rgba(32, 59, 45, .16), inset 0 1px 0 rgba(255,255,255,.84); }
+
+      /* The mark is intentionally reduced to the two circles used by the
+         original project logo: an outer circle and a smaller inner circle. */
+      .mark {
+        position: relative;
+        width: min(52vw, 270px);
+        aspect-ratio: 1;
+        perspective: 900px;
+        transform-style: preserve-3d;
+      }
+      .logo-circle {
+        position: absolute;
+        border: 2px solid var(--moss);
+        border-radius: 50%;
+        transform-style: preserve-3d;
+        will-change: transform;
+      }
+      .logo-circle--outer { inset: 0; }
+      .logo-circle--inner { inset: 17%; border-color: rgba(45, 104, 76, .82); }
+      .logo-wordmark {
+        position: absolute;
+        right: -36%;
+        bottom: 8%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        text-align: left;
+      }
+      .logo-wordmark strong { font: 650 clamp(18px, 2.2vw, 25px)/1 var(--display); letter-spacing: .12em; }
+      .logo-wordmark span { color: rgba(13,45,36,.5); font: 500 10px/1.3 var(--display); letter-spacing: .22em; text-transform: uppercase; }
+
+      .logo-button:hover .logo-circle--outer { animation: hover-outer 4.4s cubic-bezier(.22,.61,.36,1) infinite; }
+      .logo-button:hover .logo-circle--inner { animation: hover-inner 3.7s cubic-bezier(.22,.61,.36,1) infinite; }
+      .logo-button.is-pulse .logo-circle--outer { animation: click-outer 1.8s cubic-bezier(.22,.61,.36,1) both; }
+      .logo-button.is-pulse .logo-circle--inner { animation: click-inner 1.8s cubic-bezier(.22,.61,.36,1) both; }
+
+      /* Hover remains in motion for the whole time the pointer is over the
+         mark. Each circle completes full turns in opposite directions. */
+      @keyframes hover-outer { 0% { transform: rotateX(0) rotateY(0) rotateZ(0) scale(1.04); } 100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg) scale(1.04); } }
+      @keyframes hover-inner { 0% { transform: rotateX(0) rotateY(0) rotateZ(0) scale(.92); } 100% { transform: rotateX(-360deg) rotateY(-360deg) rotateZ(-360deg) scale(.92); } }
+
+      /* Click is a continuous, long-form bloom: scale first, then a full
+         3D turn, then settle over several interpolated waypoints. */
+      @keyframes click-outer {
+        0% { transform: rotateX(0) rotateY(0) rotateZ(0) scale(1); }
+        14% { transform: rotateX(13deg) rotateY(-18deg) rotateZ(4deg) scale(1.1); }
+        34% { transform: rotateX(68deg) rotateY(-128deg) rotateZ(28deg) scale(1.16); }
+        56% { transform: rotateX(174deg) rotateY(-238deg) rotateZ(62deg) scale(1.1); }
+        78% { transform: rotateX(288deg) rotateY(-318deg) rotateZ(30deg) scale(1.04); }
+        92% { transform: rotateX(348deg) rotateY(-350deg) rotateZ(8deg) scale(1.01); }
+        100% { transform: rotateX(360deg) rotateY(-360deg) rotateZ(0) scale(1); }
+      }
+      @keyframes click-inner {
+        0% { transform: rotateX(0) rotateY(0) rotateZ(0) scale(1); }
+        14% { transform: rotateX(-14deg) rotateY(20deg) rotateZ(-5deg) scale(.84); }
+        34% { transform: rotateX(-72deg) rotateY(132deg) rotateZ(-32deg) scale(.78); }
+        56% { transform: rotateX(-182deg) rotateY(246deg) rotateZ(-66deg) scale(.84); }
+        78% { transform: rotateX(-292deg) rotateY(326deg) rotateZ(-32deg) scale(.93); }
+        92% { transform: rotateX(-350deg) rotateY(354deg) rotateZ(-8deg) scale(.985); }
+        100% { transform: rotateX(-360deg) rotateY(360deg) rotateZ(0) scale(1); }
+      }
+
+      .footnote { color: rgba(13,45,36,.48); font-size: 11px; letter-spacing: .05em; }
+      .footnote .hint { display: flex; align-items: center; gap: 8px; }
+      .key { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; background: rgba(255,255,255,.35); font-size: 10px; }
+      .status { color: var(--moss); font-weight: 600; }
+
+      @media (max-width: 620px) {
+        body { overflow: auto; }
+        .page { width: min(100% - 32px, 520px); padding: 22px 0 20px; }
+        .stage { min-height: calc(100dvh - 115px); padding: 0; }
+        .logo-button { width: min(86vw, 330px); }
+        .mark { width: min(58vw, 220px); }
+        .logo-wordmark { right: -5%; bottom: 3%; }
+        .footnote { align-items: flex-start; flex-direction: column; gap: 12px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="masthead">
+        <div class="label">策略指引 · LOGO MOTION</div>
+        <div class="index">STUDY / 01</div>
+      </header>
+      <section class="stage" aria-label="策略指引 Logo 动效展示">
+        <button id="logo-button" class="logo-button" type="button" aria-label="播放 Logo 动效">
+          <span class="mark" aria-hidden="true"><span class="logo-circle logo-circle--outer"></span><span class="logo-circle logo-circle--inner"></span></span>
+          <span class="logo-wordmark"><strong>策略指引</strong><span>Strategy Guidance</span></span>
+        </button>
+      </section>
+      <footer class="footnote">
+        <div class="hint"><span class="key">CLICK</span><span>点击播放 · 悬浮旋转</span></div>
+        <div id="status" class="status" aria-live="polite">READY / IDLE</div>
+      </footer>
+    </main>
+    <script>
+      const button = document.querySelector('#logo-button');
+      const status = document.querySelector('#status');
+      let timer;
+      function play() {
+        button.classList.remove('is-pulse');
+        void button.offsetWidth;
+        button.classList.add('is-pulse');
+        status.textContent = 'PLAYING / RETURNING';
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          button.classList.remove('is-pulse');
+          status.textContent = 'READY / IDLE';
+        }, 900);
+      }
+      button.addEventListener('click', play);
+      button.addEventListener('animationend', event => {
+        if (event.animationName.startsWith('click-')) button.classList.remove('is-pulse');
+      });
+    </script>
+  </body>
+</html>
