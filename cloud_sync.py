@@ -13,10 +13,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from http.cookiejar import CookieJar
 from pathlib import Path
 from urllib.request import HTTPCookieProcessor, build_opener
+from zoneinfo import ZoneInfo
 
 import qq_sheet_extract as extractor
 
@@ -24,6 +25,29 @@ import qq_sheet_extract as extractor
 ROOT = Path(__file__).resolve().parent
 HISTORY = ROOT / "data" / "cloud_history"
 STATE = ROOT / "data" / "cloud_sync_state.json"
+SHANGHAI = ZoneInfo("Asia/Shanghai")
+
+
+def current_sync_slot(at: datetime | None = None) -> str:
+    """Return the most recent scheduled China-time update slot.
+
+    The workflow wakes up frequently to recover from GitHub's best-effort cron
+    scheduling, but this slot prevents all but one Tencent Docs request per
+    08:00 / 18:00 cycle.
+    """
+    current = (at or datetime.now(SHANGHAI)).astimezone(SHANGHAI)
+    if current.hour >= 18:
+        return f"{current:%Y-%m-%d}@18"
+    if current.hour >= 8:
+        return f"{current:%Y-%m-%d}@08"
+    return f"{current - timedelta(days=1):%Y-%m-%d}@18"
+
+
+def load_state() -> dict[str, object]:
+    try:
+        return json.loads(STATE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def digest(path: Path) -> str:
@@ -57,6 +81,11 @@ def persist_snapshot(source: Path, tab_name: str, tab_id: str) -> None:
 
 def main() -> int:
     HISTORY.mkdir(parents=True, exist_ok=True)
+    slot = current_sync_slot()
+    previous_state = load_state()
+    if previous_state.get("slot") == slot:
+        print(json.dumps({"slot": slot, "skipped": "already checked this scheduled slot"}, ensure_ascii=False))
+        return 0
     local_dates, known_digests = load_snapshots()
     cookies = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cookies))
@@ -94,7 +123,8 @@ def main() -> int:
                 updated.append(tab["name"])
 
     result = {
-        "checkedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "checkedAt": datetime.now(SHANGHAI).isoformat(timespec="seconds"),
+        "slot": slot,
         "latestLocal": latest,
         "candidateCount": len(candidates),
         "updatedTabs": updated,

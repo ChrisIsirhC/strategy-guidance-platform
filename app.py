@@ -38,10 +38,23 @@ def safely_embed_json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
-def local_update_status() -> dict[str, object]:
-    state_path = ROOT / "data" / "update_state.json"
+def published_update_status() -> dict[str, object]:
+    """Return the status of the workflow that actually updates Streamlit.
+
+    The public app is refreshed by GitHub Actions, whereas update_state.json
+    belongs to the optional local HTTP server.  Showing that local state on
+    Streamlit makes an old workstation error look like a cloud failure.
+    """
+    state_path = ROOT / "data" / "cloud_sync_state.json"
     try:
-        return json.loads(state_path.read_text(encoding="utf-8"))
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        updated_tabs = state.get("updatedTabs") or []
+        return {
+            "inProgress": False,
+            "lastResult": "updated" if updated_tabs else "no_change",
+            "updatedAt": state.get("checkedAt", ""),
+            "updatedTabs": updated_tabs,
+        }
     except (OSError, json.JSONDecodeError):
         return {"inProgress": False, "lastResult": "", "updatedAt": ""}
 
@@ -205,7 +218,7 @@ def prototype_document(folder: Path) -> str:
     }
     """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
-    update_status_literal = safely_embed_json(local_update_status())
+    update_status_literal = safely_embed_json(published_update_status())
     script = script.replace(
         "fetch('../site/site-data.json')",
         "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
