@@ -178,27 +178,29 @@ def prototype_document(folder: Path) -> str:
     html = read_from(folder, "index.html")
     script = read_from(folder, "app.js")
     css = read_from(folder, "style.css")
-    # The strategy timeline is long; keep its calendar pinned beneath the
-    # navigation so users can jump between dates without returning to top.
+    # Keep the status indicator in a narrow main-column lane.  The date picker
+    # intentionally remains the compact dropdown used by the stable version.
     css += """
-    body:has(#history-view:not([hidden])) .content { padding-top: 38px; }
-    body:has(#history-view:not([hidden])) .context { min-height: 350px; margin-bottom: 0; align-items: flex-start; }
-    body:has(#history-view:not([hidden])) .context-rule { padding-top: 12px; }
-    body:has(#history-view:not([hidden])) .calendar-control.is-inline { position: fixed; top: 126px; right: max(28px, calc((100vw - 1520px) / 2 + 42px)); z-index: 47; display: block; width: 322px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,253,252,.94); box-shadow: 0 18px 45px rgba(92,38,41,.13); backdrop-filter: blur(16px); }
-    body:has(#history-view:not([hidden])) .calendar-control.is-inline .date-calendar { position: static; display: block; width: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-    body .update-toast { width: 10px; height: 10px; display: block; }
-    body .update-toast .update-pulse { display: block; width: 10px; height: 10px; box-shadow: none; }
-    body .update-toast:hover, body .update-toast:focus-within { display: flex; }
-    body .update-status-row { position: fixed; z-index: 48; top: 78px; left: 0; right: 0; height: 38px; pointer-events: none; background: rgba(255,253,252,.86); border-bottom: 1px solid rgba(92,38,41,.08); backdrop-filter: blur(14px); }
-    body .update-status-row .update-toast { position: absolute; top: 10px; right: 28px; left: auto; pointer-events: auto; }
+    .workspace { padding-top: 38px; }
+    .update-status-row { position: fixed !important; z-index: 48 !important; top: 78px !important; left: max(244px, calc((100vw - 1520px) / 2 + 244px)) !important; right: 0 !important; height: 38px !important; background: transparent !important; border: 0 !important; backdrop-filter: none !important; pointer-events: none; }
+    .update-status-row .update-toast { position: absolute !important; top: 11px !important; right: 28px !important; left: auto !important; display: flex !important; align-items: center; width: 10px; height: 10px; min-width: 0; padding: 0; overflow: hidden; border: 0; background: transparent; box-shadow: none; pointer-events: auto; transition: width .38s cubic-bezier(.16,1,.3,1), height .38s cubic-bezier(.16,1,.3,1), padding .38s cubic-bezier(.16,1,.3,1), background .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.16,1,.3,1); }
+    .update-status-row .update-toast:hover, .update-status-row .update-toast:focus-within { width: 270px; height: 32px; padding: 7px 11px; border: 1px solid var(--line); background: rgba(255,253,252,.97); box-shadow: 0 12px 30px rgba(92,38,41,.12); }
+    .update-status-row .update-toast .update-pulse { display: block; flex: 0 0 10px; width: 10px; height: 10px; margin: 0; box-shadow: none; }
+    .update-status-row .update-toast #update-message { display: block; min-width: 0; margin-left: 9px; opacity: 0; white-space: nowrap; transform: translateX(6px); transition: opacity .2s ease .1s, transform .3s cubic-bezier(.16,1,.3,1) .05s; }
+    .update-status-row .update-toast:hover #update-message, .update-status-row .update-toast:focus-within #update-message { opacity: 1; transform: translateX(0); }
+    body:has(#history-view:not([hidden])) .content { padding-top: 28px; }
+    body:has(#history-view:not([hidden])) .context { min-height: 0; margin-bottom: 32px; align-items: center; }
+    body:has(#history-view:not([hidden])) .context-rule { display: flex; padding-top: 0; }
+    body:has(#history-view:not([hidden])) .calendar-control { position: relative; top: auto; right: auto; left: auto; width: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+    body:has(#history-view:not([hidden])) .calendar-control .date-calendar { position: absolute; display: block; width: 258px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 18px 45px rgba(92,38,41,.13); }
     @media (max-width: 760px) {
-      body:has(#history-view:not([hidden])) .content { padding-top: 36px; }
-      body:has(#history-view:not([hidden])) .context { min-height: 286px; }
-      body:has(#history-view:not([hidden])) .context-rule { display: none; }
-      body:has(#history-view:not([hidden])) .calendar-control.is-inline { top: 110px; left: 12px; right: 12px; width: auto; }
-      body:has(.calendar-control.is-strategy-history) #history-view .timeline { padding-top: 0; }
-      body .update-status-row { top: 66px; height: 36px; }
-      body .update-status-row .update-toast { top: 10px; right: 14px; left: auto; }
+      .workspace { padding-top: 36px; }
+      .update-status-row { top: 66px !important; left: 0 !important; right: 0 !important; height: 36px !important; }
+      .update-status-row .update-toast { top: 11px !important; right: 14px !important; left: auto !important; }
+      .update-status-row .update-toast:hover, .update-status-row .update-toast:focus-within { width: min(270px, calc(100vw - 28px)); }
+      body:has(#history-view:not([hidden])) .content { padding-top: 18px; }
+      body:has(#history-view:not([hidden])) .context { min-height: 0; margin-bottom: 24px; align-items: flex-start; }
+      body:has(#history-view:not([hidden])) .context-rule { display: flex; }
     }
     """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
