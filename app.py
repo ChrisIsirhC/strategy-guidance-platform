@@ -78,15 +78,37 @@ def frame_height_script() -> str:
     <script>
       (() => {
         let lastHeight = 0;
+        // components.html uses the v1 custom-component bridge.  The host
+        // ignores frame-height messages until this handshake has completed.
+        const ready = () => window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:componentReady', apiVersion: 1}, '*');
+        ready();
+        window.setTimeout(ready, 100);
+        window.setTimeout(ready, 500);
+        window.setTimeout(ready, 1200);
+        const send = (height) => {
+          const message = {isStreamlitMessage: true, type: 'streamlit:setFrameHeight', height: Math.ceil(height)};
+          // Streamlit's component host listens for this message.  Send it to
+          // both the immediate host and the top window so it also works when
+          // the component is nested by a local proxy.
+          window.parent.postMessage(message, '*');
+          if (window.top !== window.parent) window.top.postMessage(message, '*');
+        };
         const resize = () => {
           const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
           if (height === lastHeight) return;
           lastHeight = height;
-          window.parent.postMessage({isStreamlitMessage: true, type: 'streamlit:setFrameHeight', height}, '*');
+          send(height);
         };
-        new ResizeObserver(resize).observe(document.documentElement);
+        const observer = new MutationObserver(resize);
+        observer.observe(document.documentElement, {childList: true, subtree: true, attributes: true, characterData: true});
+        if (window.ResizeObserver) new ResizeObserver(resize).observe(document.documentElement);
         window.addEventListener('load', resize);
+        window.addEventListener('resize', resize);
         resize();
+        window.setTimeout(resize, 50);
+        window.setTimeout(resize, 250);
+        window.setTimeout(resize, 800);
+        window.setInterval(resize, 1500);
       })();
     </script>
     """
@@ -156,11 +178,21 @@ def prototype_document(folder: Path) -> str:
     # The strategy timeline is long; keep its calendar pinned beneath the
     # navigation so users can jump between dates without returning to top.
     css += """
-    body .calendar-control.is-strategy-history { position: fixed; top: 92px; right: max(28px, calc((100vw - 1520px) / 2 + 42px)); z-index: 7; }
+    body:has(#history-view:not([hidden])) .content { padding-top: 0; }
+    body:has(#history-view:not([hidden])) .context { min-height: 300px; margin-bottom: 0; align-items: flex-start; }
+    body:has(#history-view:not([hidden])) .context-rule { padding-top: 12px; }
+    body:has(#history-view:not([hidden])) .calendar-control.is-inline { position: fixed; top: 78px; right: max(28px, calc((100vw - 1520px) / 2 + 42px)); z-index: 7; width: 322px; }
+    body .update-toast { width: 10px; height: 10px; display: block; }
+    body .update-toast .update-pulse { display: block; width: 10px; height: 10px; box-shadow: none; }
+    body .update-toast:hover, body .update-toast:focus-within { display: flex; }
+    body .update-status-row { position: fixed; z-index: 8; top: 78px; left: 0; right: 0; height: 28px; pointer-events: none; }
+    body .update-status-row .update-toast { position: absolute; top: 7px; right: auto; left: max(262px, calc((100vw - 1520px) / 2 + 260px)); pointer-events: auto; }
     @media (max-width: 760px) {
-      body .calendar-control.is-strategy-history { position: fixed; top: 76px; left: 12px; right: 12px; width: auto; z-index: 7; }
-      .calendar-control.is-strategy-history .date-calendar { width: 100%; box-shadow: 0 14px 36px rgba(92,38,41,.14); }
-      .page-title-with-calendar:has(.calendar-control.is-strategy-history) + .timeline { padding-top: 268px; }
+      body:has(#history-view:not([hidden])) .context { min-height: 286px; }
+      body:has(#history-view:not([hidden])) .calendar-control.is-inline { top: 96px; left: 12px; right: 12px; width: auto; }
+      body:has(.calendar-control.is-strategy-history) #history-view .timeline { padding-top: 0; }
+      body .update-status-row { top: 66px; height: 30px; }
+      body .update-status-row .update-toast { top: 8px; left: 12px; }
     }
     """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
