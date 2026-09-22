@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -17,10 +18,16 @@ import streamlit.components.v1 as components
 
 ROOT = Path(__file__).resolve().parent
 SITE = ROOT / "site"
+PROTOTYPE_MAIN = ROOT / "prototype_main"
+PROTOTYPE_ARCHIVE = ROOT / "prototype_v0"
 
 
 def read(name: str) -> str:
     return (SITE / name).read_text(encoding="utf-8")
+
+
+def read_from(folder: Path, name: str) -> str:
+    return (folder / name).read_text(encoding="utf-8")
 
 
 def safely_embed_json(value: object) -> str:
@@ -113,13 +120,59 @@ def page_document(view: str) -> str:
     return initial.replace("</head>", f"{bootstrap}</head>", 1)
 
 
+def prototype_document(folder: Path) -> str:
+    """Embed one prototype variant with the same compact data bundle."""
+    html = read_from(folder, "index.html")
+    script = read_from(folder, "app.js")
+    css = read_from(folder, "style.css")
+    data_literal = safely_embed_json(json.loads(read("site-data.json")))
+    script = script.replace(
+        "fetch('../site/site-data.json')",
+        "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
+    )
+    script = script.replace(
+        "fetch('./site-data.json')",
+        "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
+    )
+    script = f"(() => {{\n{script}\n}})();"
+    html = html.replace('<link rel="stylesheet" href="./style.css" />', f"<style>{css}</style>")
+    html = html.replace(
+        '<script src="./app.js"></script>',
+        f"<script>window.__STRATEGY_DATA__={data_literal};</script><script>{script}</script>",
+    )
+    return html
+
+
+def requested_product() -> str:
+    """Resolve the public sub-site from the URL path.
+
+    Streamlit keeps the same Python entry point for these paths; the browser
+    URL is the stable public contract: / is the modified prototype, /prototype
+    is the original prototype archive, and /new is the current site.
+    """
+    request_url = str(getattr(getattr(st, "context", None), "url", "") or "")
+    path = urlparse(request_url).path.rstrip("/")
+    if path.endswith("/prototype"):
+        return "prototype"
+    if path.endswith("/new"):
+        return "new"
+    return "main"
+
+
 st.set_page_config(page_title="策略指引 · 原文图谱", page_icon="◌", layout="wide", initial_sidebar_state="collapsed")
 st.markdown(
     "<style>[data-testid='stHeader'], [data-testid='stToolbar'], [data-testid='stDecoration'] {display:none} .block-container {max-width:none;padding:0}</style>",
     unsafe_allow_html=True,
 )
 
-view = st.query_params.get("view", "home")
-if view not in {"home", "archive"}:
-    view = "home"
-components.html(page_document(view), height=1280, scrolling=True)
+product = requested_product()
+if product == "new":
+    view = st.query_params.get("view", "home")
+    if view not in {"home", "archive"}:
+        view = "home"
+    document = page_document(view)
+elif product == "prototype":
+    document = prototype_document(PROTOTYPE_ARCHIVE)
+else:
+    document = prototype_document(PROTOTYPE_MAIN)
+components.html(document, height=1280, scrolling=True)

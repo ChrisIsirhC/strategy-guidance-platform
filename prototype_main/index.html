@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>策略指引 · 今日指引</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,650&family=Noto+Serif+SC:wght@500;600;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <aside id="update-toast" class="update-toast" hidden aria-live="polite"><span class="update-pulse"></span><span id="update-message">正在检查策略日表</span></aside>
+    <header class="topbar">
+      <a class="brand" href="#today"><span class="brand-mark">S</span><span><strong>策略指引</strong><small>STRATEGY GUIDANCE</small></span></a>
+      <nav aria-label="主导航"><button data-mode="today" class="is-active">今日指引</button><button data-mode="history">历史回溯</button></nav>
+      <form class="search" id="search-form" role="search" aria-label="搜索策略或原文"><img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/search/default/24px.svg" alt="" /><input id="search-input" type="search" placeholder="搜索策略或原文" /><button type="submit" aria-label="执行搜索"><img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/arrow_forward/default/24px.svg" alt="" /></button></form>
+    </header>
+    <main class="workspace">
+      <aside class="sidebar"><div class="side-title">策略目录 <small id="strategy-count"></small></div><div id="strategy-list"></div><p>历史版本 v0<br />所有内容均按抓取底稿原文展示</p></aside>
+      <section class="content">
+        <div class="context"><div class="context-rule"><span id="context-label">今日策略</span><span id="context-count"></span></div><div class="calendar-control"><button id="date-calendar-trigger" type="button" aria-expanded="false"><img src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/calendar_month/default/24px.svg" alt="" /><span id="date-label">选择日期</span><img class="calendar-chevron" src="https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/expand_more/default/24px.svg" alt="" /></button><div id="date-calendar" class="date-calendar" hidden></div></div></div>
+        <div id="today-view"></div><div id="history-view" hidden></div><div id="search-view" hidden></div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
