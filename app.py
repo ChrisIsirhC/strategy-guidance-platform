@@ -49,10 +49,13 @@ def published_update_status() -> dict[str, object]:
     try:
         state = json.loads(state_path.read_text(encoding="utf-8"))
         updated_tabs = state.get("updatedTabs") or []
+        # Older cloud state files did not yet persist updatedAt.  Their
+        # checkedAt is the publish time when updatedTabs is non-empty.
+        updated_at = state.get("updatedAt") or (state.get("checkedAt", "") if updated_tabs else "")
         return {
             "inProgress": False,
             "lastResult": "updated" if updated_tabs else "no_change",
-            "updatedAt": state.get("updatedAt", ""),
+            "updatedAt": updated_at,
             "checkedAt": state.get("checkedAt", ""),
             "updatedTabs": updated_tabs,
         }
