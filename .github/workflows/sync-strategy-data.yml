@@ -2,11 +2,8 @@ name: 更新策略日表
 
 on:
   schedule:
-    # GitHub Actions cron is best-effort. Wake every 15 minutes so a delayed
-    # 08:00 / 18:00 task is caught up quickly; cloud_sync.py performs the
-    # China-time slot de-duplication, so Tencent Docs is still checked only
-    # once per scheduled slot.
-    - cron: "*/15 * * * *"
+    # GitHub Actions uses UTC: 00:00 / 10:00 are 08:00 / 18:00 in China.
+    - cron: "0 0,10 * * *"
   workflow_dispatch:
 
 permissions:

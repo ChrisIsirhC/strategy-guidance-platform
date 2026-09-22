@@ -31,9 +31,8 @@ SHANGHAI = ZoneInfo("Asia/Shanghai")
 def current_sync_slot(at: datetime | None = None) -> str:
     """Return the most recent scheduled China-time update slot.
 
-    The workflow wakes up frequently to recover from GitHub's best-effort cron
-    scheduling, but this slot prevents all but one Tencent Docs request per
-    08:00 / 18:00 cycle.
+    The workflow runs at the two daily slots; this value also makes a manual
+    duplicate dispatch harmless.
     """
     current = (at or datetime.now(SHANGHAI)).astimezone(SHANGHAI)
     if current.hour >= 18:
@@ -122,8 +121,11 @@ def main() -> int:
                 persist_snapshot(candidate, tab["name"], tab["id"])
                 updated.append(tab["name"])
 
+    checked_at = datetime.now(SHANGHAI).isoformat(timespec="seconds")
+    previous_updated_at = previous_state.get("updatedAt", "")
     result = {
-        "checkedAt": datetime.now(SHANGHAI).isoformat(timespec="seconds"),
+        "checkedAt": checked_at,
+        "updatedAt": checked_at if updated else previous_updated_at,
         "slot": slot,
         "latestLocal": latest,
         "candidateCount": len(candidates),

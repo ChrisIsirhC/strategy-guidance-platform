@@ -52,7 +52,8 @@ def published_update_status() -> dict[str, object]:
         return {
             "inProgress": False,
             "lastResult": "updated" if updated_tabs else "no_change",
-            "updatedAt": state.get("checkedAt", ""),
+            "updatedAt": state.get("updatedAt", ""),
+            "checkedAt": state.get("checkedAt", ""),
             "updatedTabs": updated_tabs,
         }
     except (OSError, json.JSONDecodeError):

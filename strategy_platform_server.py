@@ -288,9 +288,13 @@ class UpdateManager:
             if result is None or message is None:
                 assert last_error is not None
                 raise last_error
-            self._save_state(inProgress=False, lastSlot=current_slot, lastResult=result, retryCount=attempt, updatedAt=now().isoformat(timespec="seconds"), message=message)
+            checked_at = now().isoformat(timespec="seconds")
+            changes = {"inProgress": False, "lastSlot": current_slot, "lastResult": result, "retryCount": attempt, "checkedAt": checked_at, "message": message}
+            if result == "updated":
+                changes["updatedAt"] = checked_at
+            self._save_state(**changes)
         except Exception as error:
-            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="failed", retryCount=2, updatedAt=now().isoformat(timespec="seconds"), message="更新失败，已重试 2 次；下次检查会继续重试", error=f"{type(error).__name__}: {error}")
+            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="failed", retryCount=2, checkedAt=now().isoformat(timespec="seconds"), message="检查失败，已重试 2 次；下次检查会继续重试", error=f"{type(error).__name__}: {error}")
         finally:
             os.close(descriptor)
             try:
