@@ -62,11 +62,11 @@ class UpdateManager:
 
     def _load_state(self) -> dict[str, Any]:
         if not STATE_PATH.is_file():
-            return {"inProgress": False, "lastSlot": "", "lastResult": "", "updatedAt": "", "message": "尚未检查"}
+            return {"inProgress": False, "lastSlot": "", "lastResult": "", "updatedAt": "", "checkedAt": "", "message": "尚未检查"}
         try:
             return json.loads(STATE_PATH.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            return {"inProgress": False, "lastSlot": "", "lastResult": "", "updatedAt": "", "message": "状态文件已重置"}
+            return {"inProgress": False, "lastSlot": "", "lastResult": "", "updatedAt": "", "checkedAt": "", "message": "状态文件已重置"}
 
     def status(self) -> dict[str, Any]:
         with self._thread_lock:
@@ -109,7 +109,7 @@ class UpdateManager:
                 return False
             if same_slot and self._state.get("lastResult") == "failed":
                 try:
-                    failed_at = datetime.fromisoformat(str(self._state.get("updatedAt") or ""))
+                    failed_at = datetime.fromisoformat(str(self._state.get("checkedAt") or ""))
                     if now() - failed_at < timedelta(minutes=5):
                         return False
                 except ValueError:
@@ -269,7 +269,7 @@ class UpdateManager:
     def _run(self, current_slot: str) -> None:
         descriptor = self._acquire_file_lock()
         if descriptor is None:
-            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="busy", updatedAt=now().isoformat(timespec="seconds"), message="已有更新任务正在执行")
+            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="busy", checkedAt=now().isoformat(timespec="seconds"), message="已有更新任务正在执行")
             return
         try:
             os.write(descriptor, f"pid={os.getpid()} started={now().isoformat()}".encode("utf-8"))
