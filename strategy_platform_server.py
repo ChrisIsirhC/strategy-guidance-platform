@@ -288,9 +288,9 @@ class UpdateManager:
             if result is None or message is None:
                 assert last_error is not None
                 raise last_error
-            self._save_state(inProgress=False, lastSlot=current_slot, lastResult=result, updatedAt=now().isoformat(timespec="seconds"), message=message)
+            self._save_state(inProgress=False, lastSlot=current_slot, lastResult=result, retryCount=attempt, updatedAt=now().isoformat(timespec="seconds"), message=message)
         except Exception as error:
-            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="failed", updatedAt=now().isoformat(timespec="seconds"), message="日表更新失败，将在下次检查时自动重试", error=f"{type(error).__name__}: {error}")
+            self._save_state(inProgress=False, lastSlot=current_slot, lastResult="failed", retryCount=2, updatedAt=now().isoformat(timespec="seconds"), message="更新失败，已重试 2 次；下次检查会继续重试", error=f"{type(error).__name__}: {error}")
         finally:
             os.close(descriptor)
             try:

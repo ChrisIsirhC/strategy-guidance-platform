@@ -192,7 +192,8 @@ def prototype_document(folder: Path) -> str:
     body:has(#history-view:not([hidden])) .context { min-height: 0; margin-bottom: 32px; align-items: center; }
     body:has(#history-view:not([hidden])) .context-rule { display: flex; padding-top: 0; }
     body:has(#history-view:not([hidden])) .calendar-control { position: relative; top: auto; right: auto; left: auto; width: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-    body:has(#history-view:not([hidden])) .calendar-control .date-calendar { position: absolute; display: block; width: 258px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 18px 45px rgba(92,38,41,.13); }
+    body:has(#history-view:not([hidden])) .calendar-control .date-calendar:not([hidden]) { position: absolute; display: block; width: 258px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 18px 45px rgba(92,38,41,.13); }
+    .calendar-control .date-calendar[hidden] { display: none !important; }
     @media (max-width: 760px) {
       .workspace { padding-top: 36px; }
       .update-status-row { top: 66px !important; left: 0 !important; right: 0 !important; height: 36px !important; }
