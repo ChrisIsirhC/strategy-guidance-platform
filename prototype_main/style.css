@@ -118,3 +118,13 @@ body:has(#history-view:not([hidden])) .calendar-control .date-calendar:not([hidd
 .case-grid{columns:2;column-gap:22px}.case-card{position:relative;display:inline-block;width:100%;padding:27px 29px 29px;margin:0 0 22px;break-inside:avoid;border:1px solid var(--line);border-radius:13px;background:var(--paper);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 18px 34px rgba(92,38,41,.045);transition:transform .7s cubic-bezier(.32,.72,0,1),box-shadow .7s cubic-bezier(.32,.72,0,1)}.case-card:hover{transform:translateY(-4px);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 22px 42px rgba(92,38,41,.09)}
 .case-card h3{margin:12px 0 4px;color:var(--red-deep);font:650 29px/1.18 var(--display);letter-spacing:-.035em;max-width:calc(100% - 66px)}.case-card-icon{position:absolute;top:25px;right:27px;width:54px;height:54px;background:#e6bfc3;opacity:.85;-webkit-mask:var(--icon) center/contain no-repeat;mask:var(--icon) center/contain no-repeat}.case-type{color:var(--red);font-size:11px;font-weight:700;letter-spacing:.1em}.case-type span{margin-left:10px;color:var(--muted);font-weight:500;letter-spacing:.04em}.case-manager{margin:11px 0 22px;color:var(--ink);font:650 23px/1.3 var(--display)}.case-fields{display:grid;gap:16px}.case-field{padding-top:13px;border-top:1px solid rgba(92,38,41,.12)}.case-card .label{color:var(--red);font-size:10px;font-weight:700;letter-spacing:.14em}.case-card p{margin:5px 0 0;white-space:pre-wrap;line-height:1.78;color:#433637;font-size:14px}
 @media(max-width:900px){.case-grid{columns:1}}@media(max-width:760px){.case-hero{padding:30px 24px}.case-hero h1{font-size:43px}.case-summary{gap:15px}.case-card{padding:22px 20px}}
+.case-loading{display:flex;align-items:center;gap:12px;min-height:42px;margin:4px 0 18px;color:var(--red-deep);font-size:13px}
+.case-loading-spinner{width:18px;height:18px;border:2px solid #e6bfc3;border-top-color:var(--red);border-radius:50%;animation:case-spin .8s linear infinite}
+.case-loading-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.case-loading-grid>div{height:185px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(100deg,#fffdfc 25%,#f5e9e7 50%,#fffdfc 75%);background-size:200% 100%;animation:case-shimmer 1.6s ease-in-out infinite}
+.case-grid .case-card{animation:case-arrive .3s ease-out backwards}
+@keyframes case-spin{to{transform:rotate(360deg)}}
+@keyframes case-shimmer{to{background-position-x:-200%}}
+@keyframes case-arrive{from{opacity:.5;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){.case-loading-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.case-loading-spinner,.case-loading-grid>div,.case-grid .case-card{animation:none}}

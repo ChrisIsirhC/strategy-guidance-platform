@@ -208,7 +208,29 @@ def page_document(view: str) -> str:
     return initial.replace("</head>", f"{bootstrap}</head>", 1)
 
 
-def prototype_document(folder: Path, *, active: str | None = None) -> str:
+def published_case_payload() -> dict[str, object]:
+    """Read current published cases separately from the static public shell."""
+    from case_store import CaseStore
+    try:
+        published_cases = CaseStore().list_cases(published_only=True)
+        case_search_error = ""
+    except RuntimeError as exc:
+        published_cases = []
+        case_search_error = str(exc)
+    except Exception:
+        published_cases = []
+        case_search_error = "案例数据库暂时无法访问，请稍后重试。"
+    return {
+        "cases": [
+            {key: item.get(key, "") for key in ("id", "title", "strategy", "manager", "case_date", "background", "judgement", "action", "result", "review")}
+            for item in published_cases
+        ],
+        "error": case_search_error,
+        "status": published_update_status(),
+    }
+
+
+def prototype_document(folder: Path, *, active: str | None = None, live_payload: bool = False) -> str:
     """Embed one prototype variant with the same compact data bundle."""
     html = read_from(folder, "index.html")
     script = read_from(folder, "app.js")
@@ -257,23 +279,11 @@ def prototype_document(folder: Path, *, active: str | None = None) -> str:
     @media (max-width: 760px) { .update-status-row { top: 66px !important; right: 14px !important; width: 210px !important; } .update-status-row .update-toast:hover, .update-status-row .update-toast:focus-within { width: min(210px, calc(100vw - 28px)) !important; } }
     """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
-    update_status_literal = safely_embed_json(published_update_status())
-    from case_store import CaseStore
-    try:
-        published_cases = CaseStore().list_cases(published_only=True)
-        case_search_error = ""
-    except RuntimeError as exc:
-        published_cases = []
-        case_search_error = str(exc)
-    except Exception:
-        published_cases = []
-        case_search_error = "案例数据库暂时无法访问，请稍后重试。"
-    case_search_data = [
-        {key: item.get(key, "") for key in ("id", "title", "strategy", "manager", "case_date", "background", "judgement", "action", "result", "review")}
-        for item in published_cases
-    ]
-    case_literal = safely_embed_json(case_search_data)
-    case_error_literal = safely_embed_json(case_search_error)
+    # Live cases/status must not alter the srcdoc identity on each rerun.
+    payload = None if live_payload else published_case_payload()
+    update_status_literal = safely_embed_json({"inProgress": True} if live_payload else payload["status"])
+    case_literal = "null" if live_payload else safely_embed_json(payload["cases"])
+    case_error_literal = safely_embed_json("" if live_payload else payload["error"])
     # Search is route state, not document source: it must not remount the
     # public iframe when a visitor moves between the three public routes.
     search_literal = safely_embed_json("")
@@ -359,7 +369,7 @@ elif product == "prototype":
 else:
     # One public shell across all three routes.  Streamlit still owns the URL,
     # while the component keeps the nav/sidebar and existing animations alive.
-    document = prototype_document(PROTOTYPE_MAIN, active="today")
+    document = prototype_document(PROTOTYPE_MAIN, active="today", live_payload=True)
 route = {"view": {"main": "today", "archive": "history", "cases": "cases"}.get(product, "today")}
 if product == "cases":
     route["case"] = st.session_state.pop("case_focus_id", "") or st.query_params.get("case", "")
@@ -368,13 +378,16 @@ if product == "main":
 destination = STRATEGY_COMPONENT(
     document=document,
     route=route,
+    payload=published_case_payload() if product in {"main", "archive", "cases"} else None,
     key="strategy-shell-public" if product in {"main", "archive", "cases"} else f"strategy-shell-{product}",
 )
 if isinstance(destination, str):
     destination_url = urlparse(destination)
     destination_page = {"/": "main", "/archive": "archive", "/cases": "cases"}.get(destination_url.path)
     if destination_page:
-        if destination_page == "cases":
-            st.session_state.case_focus_id = parse_qs(destination_url.query).get("case", [""])[0]
-        if product != destination_page or destination_page == "cases":
+        if product != destination_page:
+            if destination_page == "cases":
+                st.session_state.case_focus_id = parse_qs(destination_url.query).get("case", [""])[0]
             st.switch_page(pages[destination_page])
+        # Same-page case focus is handled in the mounted frame. Updating
+        # Streamlit query state here would cause a needless full rerun.
