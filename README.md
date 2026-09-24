@@ -30,10 +30,12 @@
 
 ## 本地运行
 
+双击 `启动策略指引平台.bat`：脚本打开当前 Streamlit 主站 `http://127.0.0.1:8511/`，并在后台保留本地日表同步服务（4174 端口，不再打开旧网站）；重复双击不会重复启动这两个服务。需要只启动前台时，也可运行：
+
 ```powershell
-C:\Users\chris\AppData\Local\Programs\Python\Python313\python.exe -m streamlit run app.py
+C:\Users\chris\AppData\Local\Programs\Python\Python313\python.exe -m streamlit run app.py --server.port 8511
 ```
 
-`streamlit run app.py` 本身只读已发布的 `site/site-data.json`，本地刷新网页不会抓取腾讯表格。`启动策略指引平台.bat` 启动的是另一个本地服务（4174 端口），它会在启动、访问和每日 08:00／18:00 时按时段判断是否检查并增量抓取。Streamlit Cloud 的日表依赖 GitHub Actions 同步后的仓库提交；与 Supabase 案例库是两条独立数据链。
+`streamlit run app.py` 本身只读 `site/site-data.json`，单独刷新前台不会抓取腾讯表格。由 BAT 启动的本地同步服务会在启动、访问旧服务及每日 08:00／18:00 时按时段判断是否增量抓取；同步完成后刷新 Streamlit 页面即可读取新数据。Streamlit Cloud 的日表则依赖 GitHub Actions 同步后的仓库提交；与 Supabase 案例库是两条独立数据链。
 
 案例发布写入 Supabase 后，新访问或刷新 `/cases` 可直接读到最新已发布内容，无需 Git 提交；草稿只在后台可见。配置之前本机使用忽略入库的测试 JSON，云端禁止保存。公开环境中的测试账号只是过渡方案，正式对外使用前务必换强密码并升级独立账号／权限控制。
