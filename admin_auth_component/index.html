@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head><meta charset="utf-8"><style>html,body{margin:0;height:0;overflow:hidden}</style></head>
+  <body>
+    <script>
+      (() => {
+        const key = 'strategy-guidance-admin-login-v1';
+        let lastResult;
+        function report(value) {
+          if (lastResult === value) return;
+          lastResult = value;
+          window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setComponentValue',value}, '*');
+        }
+        window.addEventListener('message', event => {
+          if (event.source !== window.parent || event.data?.type !== 'streamlit:render') return;
+          const {action, token} = event.data.args || {};
+          try {
+            if (action === 'save' && token) localStorage.setItem(key, token);
+            if (action === 'clear') localStorage.removeItem(key);
+            report(localStorage.getItem(key) || '');
+          } catch (_) { report(''); }
+        });
+        window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:componentReady',apiVersion:1}, '*');
+        window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setFrameHeight',height:0}, '*');
+      })();
+    </script>
+  </body>
+</html>

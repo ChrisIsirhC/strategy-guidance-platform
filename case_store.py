@@ -54,7 +54,7 @@ def admin_credentials() -> tuple[str, str]:
     # The real password is supplied through local Streamlit secrets or the
     # deployment platform.  Keeping the fallback empty prevents an accidental
     # production login if secrets were not configured.
-    return _secret("ADMIN_USERNAME", "test"), _secret("ADMIN_PASSWORD", "")
+    return _secret("ADMIN_USERNAME", "admin"), _secret("ADMIN_PASSWORD", "")
 
 
 def _read_local() -> list[dict[str, Any]]:
@@ -186,3 +186,19 @@ class CaseStore:
             rows.append(record)
         _write_local(rows)
         return record
+
+    def delete_case(self, case_id: str) -> bool:
+        """Delete exactly one selected case, returning False if it no longer exists."""
+        self._require_backend()
+        if not case_id or not case_id.strip():
+            raise ValueError("必须指定要删除的案例。")
+        if self.remote is not None:
+            response = self.remote.table("strategy_cases").delete().eq("id", case_id).select("id").execute()
+            return any(row.get("id") == case_id for row in (response.data or []))
+
+        rows = _read_local()
+        remaining = [row for row in rows if row.get("id") != case_id]
+        if len(remaining) == len(rows):
+            return False
+        _write_local(remaining)
+        return True

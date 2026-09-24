@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 import streamlit as st
 
+from auth_persistence import admin_auth_bridge, create_login_token, validate_login_token
 from case_store import CaseStore, admin_credentials
 from shared_nav import nav_css, render_nav
 
@@ -62,16 +63,16 @@ def _css() -> None:
         .sheet-action { display:inline-flex; align-items:center; gap:8px; color:var(--red-deep); font-size:13px; font-weight:700; text-decoration:none; }
         .sheet-action:hover { color:var(--red); }
         .sheet-note { margin-top:5px; color:var(--muted); font-size:11px; }
-        .st-key-case-daily-action, .st-key-case-new-action, .st-key-case-list-surface, .st-key-case-editor-surface { position:relative; padding:25px 28px 28px; border:1px solid rgba(137,49,57,.12); border-radius:16px; background:var(--paper); box-shadow:inset 0 1px 0 #fff,0 16px 40px rgba(92,38,41,.045); animation:caseReveal .68s cubic-bezier(.32,.72,0,1) both; }
+        .st-key-case-daily-action, .st-key-case-new-action, .st-key-case-list-surface, .st-key-case-editor-surface { position:relative; padding:25px 28px 28px; border:1px solid rgba(137,49,57,.12); border-radius:16px; background:var(--paper); box-shadow:inset 0 1px 0 #fff,0 16px 40px rgba(92,38,41,.045); }
+        .st-key-case-editor-surface { animation:caseReveal .35s cubic-bezier(.16,1,.3,1) both; }
         .st-key-case-daily-action:before, .st-key-case-new-action:before { content:""; position:absolute; inset:5px; border:1px solid rgba(179,38,45,.06); border-radius:11px; pointer-events:none; }
         .st-key-case-daily-action, .st-key-case-new-action { background:linear-gradient(135deg,rgba(179,38,45,.045),transparent 70%),var(--paper); }
+        .st-key-case-daily-action, .st-key-case-new-action { display:flex; flex-direction:column; align-items:flex-start; }
         .st-key-case-list-surface { margin-top:28px; }
         .st-key-case-editor-surface { margin-top:28px; }
         .case-action-eyebrow { margin:0 0 7px; color:var(--red); font-size:10px; font-weight:700; letter-spacing:.16em; }
         .case-action-title { margin:0 0 5px; color:var(--red-deep); font:650 26px/1.2 var(--display); }
         .case-action-note { margin:0 0 18px; color:var(--muted); font-size:12px; line-height:1.7; }
-        .case-action-link { display:inline-flex; align-items:center; gap:14px; min-height:40px; padding:8px 15px; border-radius:999px; color:#fff !important; background:var(--red); font-size:12px; font-weight:700; text-decoration:none !important; transition:transform .55s cubic-bezier(.16,1,.3,1); }
-        .case-action-link:hover { transform:translateY(-2px); }
         .case-search-group { margin-top:30px; }
         [data-testid="stForm"] { padding:22px 24px 10px; border:1px solid var(--line); border-radius:16px; background:rgba(255,253,252,.78); box-shadow:inset 0 1px 0 rgba(255,255,255,.92), 0 18px 40px rgba(92,38,41,.045); }
         [data-testid="stHeading"] h2, [data-testid="stHeading"] h3 { color:var(--red-deep); font-family:var(--display); letter-spacing:-.03em; }
@@ -84,25 +85,25 @@ def _css() -> None:
         [data-testid="stFormSubmitButton"] button[kind="primary"] { color:#fff !important; background:var(--red) !important; }
         [data-testid="stButton"] button[kind="primary"] { color:#fff !important; background:var(--red) !important; }
         .case-list-marker { display:none; }
-        [data-testid="stHorizontalBlock"]:has(.case-list-marker) > [data-testid="stColumn"] { animation:caseReveal .58s cubic-bezier(.16,1,.3,1) both; }
-        [data-testid="stHorizontalBlock"]:has(.case-list-marker) > [data-testid="stColumn"]:nth-child(2) { animation-delay:.09s; }
         @keyframes caseReveal { from { opacity:.35; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-        @media (prefers-reduced-motion:reduce) { [data-testid="stHorizontalBlock"]:has(.case-list-marker) > [data-testid="stColumn"] { animation:none; } }
+        @media (prefers-reduced-motion:reduce) { .st-key-case-editor-surface { animation:none; } }
         [data-testid="stAlert"] { border-radius:9px !important; }
         @media (max-width: 760px) { .stApp .block-container { padding:0 16px 56px !important; } .case-hero { padding:30px 24px; } .case-hero h1 { font-size:43px; } .case-summary { gap:15px; } .case-card { padding:22px 20px; } [data-testid="stForm"] { padding:18px 16px 8px; } .st-key-case-daily-action,.st-key-case-new-action,.st-key-case-list-surface,.st-key-case-editor-surface { padding:20px 18px; } }
         /* Shared public/editor navigation, identical hierarchy and sizing. */
         .stApp .block-container { padding-top:0 !important; }
         div[data-testid="stElementContainer"]:has(.topbar) { position:sticky; top:0; z-index:30; width:calc(100% + 84px) !important; max-width:none !important; margin:0 0 50px -42px; }
         .st-key-case-editor-surface [data-testid="stForm"] { margin-top:20px; box-shadow:none; background:transparent; border:0; padding:0; }
-        .st-key-case-daily-action,.st-key-case-new-action { min-height:218px; }
-        .st-key-case-daily-action .case-action-link,.st-key-case-new-action [data-testid="stButton"] { position:absolute; left:28px; bottom:28px; width:190px; margin:0; }
-        .st-key-case-daily-action .case-action-link,.st-key-case-new-action [data-testid="stButton"] button { display:flex; align-items:center; justify-content:center; width:190px !important; height:44px; min-height:44px; padding:9px 17px; border:0 !important; border-radius:999px; color:#fff !important; background:var(--red) !important; font:700 13px/1.2 var(--ui) !important; box-shadow:none !important; text-decoration:none !important; }
-        .st-key-case-daily-action .case-action-link:hover,.st-key-case-new-action [data-testid="stButton"] button:hover { background:var(--red-deep) !important; transform:translateY(-2px); }
+        .st-key-case-daily-action,.st-key-case-new-action { min-height:260px; height:260px; flex-shrink:0; }
+        .st-key-case-daily-action > [data-testid="stElementContainer"]:has([data-testid="stLinkButton"]),.st-key-case-new-action > [data-testid="stElementContainer"]:has([data-testid="stButton"]) { width:190px; margin-top:auto; }
+        .st-key-case-daily-action [data-testid="stLinkButton"] a,.st-key-case-new-action [data-testid="stButton"] button { display:flex; align-items:center; justify-content:center; gap:10px; width:190px !important; height:44px; min-height:44px; padding:9px 17px; border:0 !important; border-radius:999px !important; color:#fff !important; background:var(--red) !important; font:700 13px/1.2 var(--ui) !important; box-shadow:none !important; text-decoration:none !important; }
+        .st-key-case-daily-action [data-testid="stLinkButton"] a:hover,.st-key-case-new-action [data-testid="stButton"] button:hover { background:var(--red-deep) !important; transform:translateY(-2px); }
         .st-key-case-logout { display:flex; justify-content:flex-end; margin:20px 0 0; }
         .st-key-case-logout [data-testid="stButton"] button { width:auto; min-height:32px; padding:5px 12px; color:var(--muted) !important; background:transparent !important; border:0 !important; font-size:11px; font-weight:500 !important; }
         .st-key-case-logout [data-testid="stButton"] button:hover { color:var(--red-deep) !important; background:var(--red-soft) !important; }
         @media (min-width:1321px) { div[data-testid="stElementContainer"]:has(.topbar) { width:100vw !important; margin-left:calc((1320px - 100vw) / 2 - 42px); } }
-        @media (max-width:760px) { div[data-testid="stElementContainer"]:has(.topbar) { width:calc(100% + 32px) !important; margin-left:-16px; margin-bottom:30px; } .st-key-case-daily-action,.st-key-case-new-action { min-height:210px; } .st-key-case-daily-action .case-action-link,.st-key-case-new-action [data-testid="stButton"] { left:18px; bottom:20px; } }
+        .st-key-case-delete-action { margin-top:22px; padding-top:18px; border-top:1px solid var(--line); }
+        .st-key-case-delete-action [data-testid="stButton"] button { color:var(--red-deep) !important; background:transparent !important; border-color:rgba(179,38,45,.30) !important; }
+        @media (max-width:760px) { div[data-testid="stElementContainer"]:has(.topbar) { width:calc(100% + 32px) !important; margin-left:-16px; margin-bottom:30px; } .st-key-case-daily-action,.st-key-case-new-action { height:auto; min-height:202px; } }
         </style>
         """
     st.markdown(styles.replace("</style>", nav_css() + "</style>"), unsafe_allow_html=True)
@@ -177,22 +178,41 @@ def render_cases_page(pages: dict[str, Any]) -> None:
 
 
 def _login(pages: dict[str, Any]) -> bool:
+    username, password = admin_credentials()
+    if not password:
+        _css()
+        _nav("admin", pages)
+        st.error("后台密码尚未配置。请在 Streamlit Secrets 中设置 ADMIN_PASSWORD。")
+        return False
+    action = st.session_state.get("case_admin_auth_action", "read")
+    token = st.session_state.get("case_admin_auth_token", "") if action == "save" else ""
+    browser_token = admin_auth_bridge(action=action, token=token)
+    if action in {"save", "clear"} and browser_token == (token if action == "save" else ""):
+        st.session_state.pop("case_admin_auth_action", None)
+        st.session_state.pop("case_admin_auth_token", None)
     if st.session_state.get("case_admin_logged_in"):
+        return True
+    if action == "clear" and browser_token != "":
+        st.caption("正在退出登录…")
+        return False
+    if browser_token is None:
+        st.caption("正在恢复登录状态…")
+        return False
+    if action != "clear" and validate_login_token(browser_token, username, password):
+        st.session_state.case_admin_logged_in = True
         return True
     _css()
     _nav("admin", pages)
     st.markdown('<section class="case-hero"><p class="case-kicker">后台维护 / EDITORIAL DESK</p><h1>萃取、迭代</h1><div class="case-meta">测试阶段使用统一账户维护案例内容；每日原始策略观点不在这里修改。</div></section>', unsafe_allow_html=True)
-    username, password = admin_credentials()
-    if not password:
-        st.error("后台密码尚未配置。请在 Streamlit Secrets 中设置 ADMIN_PASSWORD。")
-        return False
     with st.form("case_admin_login"):
-        entered_user = st.text_input("用户名", value="test")
+        entered_user = st.text_input("用户名", value="admin")
         entered_password = st.text_input("密码", type="password")
         submitted = st.form_submit_button("登录后台", type="primary")
     if submitted:
         if entered_user.strip() == username and entered_password == password:
             st.session_state.case_admin_logged_in = True
+            st.session_state.case_admin_auth_action = "save"
+            st.session_state.case_admin_auth_token = create_login_token(username, password)
             st.rerun()
         else:
             st.error("用户名或密码不正确。")
@@ -224,27 +244,38 @@ def render_admin_page(pages: dict[str, Any]) -> None:
     if not _login(pages):
         return
     _css()
+    _nav("admin", pages)
+    _admin_workspace()
+
+
+def _select_editor(editor_id: str) -> None:
+    st.session_state.case_editor_id = editor_id
+
+
+@st.fragment
+def _admin_workspace() -> None:
     store = CaseStore()
     can_save = _can_save_cases(store)
-    _nav("admin", pages)
     try:
         all_cases = store.list_cases()
     except Exception:
         st.error("案例数据库暂时无法访问。请检查数据库配置和网络后重试。")
         return
+    feedback = st.session_state.pop("case_admin_feedback", "")
+    if feedback:
+        st.success(feedback)
     published_count = sum(1 for item in all_cases if item.get("status") == "published")
     draft_count = len(all_cases) - published_count
     st.markdown(f'<section class="case-hero"><p class="case-kicker">后台维护 / EDITORIAL DESK</p><h1>沉淀、精进</h1><div class="case-meta">数据后端：{escape(store.backend_name)} · 共享表格原始观点不在此处修改。</div><div class="case-summary"><span><strong>{len(all_cases)}</strong>全部案例</span><span><strong>{published_count}</strong>已发布</span><span><strong>{draft_count}</strong>草稿</span></div></section>', unsafe_allow_html=True)
     daily_column, new_column = st.columns(2, gap="medium")
     with daily_column:
         with st.container(key="case-daily-action"):
-            st.markdown(f'<p class="case-action-eyebrow">DAILY GUIDANCE</p><h2 class="case-action-title">编辑每日指引</h2><p class="case-action-note">原始策略观点仍在腾讯共享表格中维护。</p><a class="case-action-link" href="{SOURCE_SHEET_URL}" target="_blank" rel="noopener noreferrer">打开共享表格 <span aria-hidden="true">↗</span></a>', unsafe_allow_html=True)
+            st.markdown('<p class="case-action-eyebrow">DAILY GUIDANCE</p><h2 class="case-action-title">编辑每日指引</h2><p class="case-action-note">原始策略观点仍在腾讯共享表格中维护。</p>', unsafe_allow_html=True)
+            st.link_button("打开共享表格", SOURCE_SHEET_URL, type="primary", icon=":material/open_in_new:")
     with new_column:
         with st.container(key="case-new-action"):
             st.markdown('<p class="case-action-eyebrow">MANAGER CASES</p><h2 class="case-action-title">新增案例</h2><p class="case-action-note">先保存草稿，再由经理决定何时发布。</p>', unsafe_allow_html=True)
-            if st.button("＋ 新增案例", key="case-add", type="primary"):
-                st.session_state.case_editor_id = "__new__"
-                st.rerun()
+            st.button("新增案例", key="case-add", type="primary", icon=":material/add:", on_click=_select_editor, args=("__new__",))
     if not can_save:
         st.warning("案例数据库未连接，暂不能保存草稿或发布。请检查后台数据库配置后重试。")
 
@@ -262,9 +293,7 @@ def render_admin_page(pages: dict[str, Any]) -> None:
             st.subheader("案例列表")
             for item in existing:
                 label = f"{'●' if item.get('status') == 'published' else '○'} {item.get('title') or '未命名案例'}"
-                if st.button(label, key=f"case-select-{item.get('id')}", use_container_width=True):
-                    st.session_state.case_editor_id = item.get("id")
-                    st.rerun()
+                st.button(label, key=f"case-select-{item.get('id')}", use_container_width=True, on_click=_select_editor, args=(str(item.get("id")),))
             if not existing:
                 st.caption("还没有案例，先新建一条。")
 
@@ -292,6 +321,10 @@ def render_admin_page(pages: dict[str, Any]) -> None:
                 publish = st.form_submit_button("发布", type="primary", disabled=not can_save)
                 status = "published" if publish else "draft"
                 submitted = save_draft or publish
+            if editor_id != "__new__":
+                with st.container(key="case-delete-action"):
+                    if st.button("删除案例", key="case-delete", disabled=not can_save):
+                        _confirm_delete(store, editor_id, str(initial.get("title") or "未命名案例"))
         if submitted:
             if not can_save:
                 st.error("案例数据库尚未配置，无法保存到云端。")
@@ -315,20 +348,41 @@ def render_admin_page(pages: dict[str, Any]) -> None:
                     "review": review,
                     "status": status,
                 },
-                    actor="test",
+                    actor=admin_credentials()[0],
                 )
             except Exception:
                 st.error("保存失败，案例没有发布。请检查数据库连接后重试。")
                 return
             st.session_state.case_editor_id = saved.get("id")
-            st.success("案例已发布，前台现在可以看到它。" if status == "published" else "草稿已保存，尚未在前台显示。")
+            st.session_state.case_admin_feedback = "案例已发布，前台现在可以看到它。" if status == "published" else "草稿已保存，尚未在前台显示。"
+            st.rerun()
     _logout()
+
+
+@st.dialog("确认删除案例")
+def _confirm_delete(store: CaseStore, case_id: str, title: str) -> None:
+    st.write(f"确定删除「{title}」吗？删除后，已发布案例会立即从前台消失，且无法恢复。")
+    cancel, confirm = st.columns(2)
+    with cancel:
+        if st.button("取消", use_container_width=True):
+            st.rerun()
+    with confirm:
+        if st.button("确认删除", type="primary", use_container_width=True):
+            try:
+                deleted = store.delete_case(case_id)
+            except Exception:
+                st.error("删除失败，案例仍然保留。请检查数据库连接后重试。")
+                return
+            st.session_state.case_editor_id = None
+            st.session_state.case_admin_feedback = "案例已删除。" if deleted else "案例已不存在，列表已刷新。"
+            st.rerun()
 
 
 def _logout() -> None:
     with st.container(key="case-logout"):
         if st.button("退出登录", key="case-sign-out"):
             st.session_state.pop("case_admin_logged_in", None)
+            st.session_state.case_admin_auth_action = "clear"
             st.rerun()
 
 

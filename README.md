@@ -15,7 +15,7 @@
 - `/prototype`：prototype v0 历史存档；
 - `/new`：当前绿色版网站。
 - `/cases`：独立的策略案例页面，只展示已发布案例。
-- `/admin`：策略案例后台。测试阶段用户名为 `test`，密码仅在本地或部署 Secrets 中配置，不提交至公开仓库。
+- `/admin`：策略案例后台。测试阶段默认用户名为 `admin`，密码仅在本地或部署 Secrets 中配置，不提交至公开仓库。
 
 主站和两个子站共用同一份精简数据底稿；案例不写回共享表格。共享表格快照由 GitHub Actions 提交 `site/site-data.json`、`data/cloud_history`、`data/cloud_sync_state.json` 到仓库，部署实例重启不会删除仓库里的快照。案例测试 JSON 被 `.gitignore` 忽略，**不会自动提交到 GitHub**；未配置 Supabase 时，线上保存／发布按钮禁用，避免云端临时文件造成假成功。后台测试账号密码从 Streamlit Secrets 读取，不存放在仓库代码中。
 
