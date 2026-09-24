@@ -10,6 +10,7 @@ data/qq_sheet_smoketest/
 data/qq_sheet_snapshots/
 data/strategy_update.lock
 data/update_state.json
+data/strategy_cases.local.json
 
 # Local editor and operating-system files
 .DS_Store

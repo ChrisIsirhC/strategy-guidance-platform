@@ -9,11 +9,14 @@ audit archives stored on a local workstation.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import streamlit as st
 import streamlit.components.v1 as components
+
+from shared_nav import nav_css, render_nav
 
 
 ROOT = Path(__file__).resolve().parent
@@ -87,6 +90,21 @@ def navigation_script() -> str:
         if (!link) return;
         event.preventDefault();
         window.__strategyNavigate(link.dataset.strategyRoute);
+      });
+    </script>
+    """
+
+
+def cross_page_navigation_script() -> str:
+    """Ask the Streamlit host to navigate public links in the current tab."""
+    return """
+    <script>
+      document.addEventListener('click', function(event) {
+        const link = event.target.closest('.topbar a[href^="/"], a[href^="/cases"]');
+        if (!link) return;
+        if (link.target === '_blank') return;
+        event.preventDefault();
+        window.parent.postMessage({type:'strategy:navigate', path:link.getAttribute('href')}, '*');
       });
     </script>
     """
@@ -178,7 +196,7 @@ def prepared_page(view: str) -> str:
     scoped_script = f"(() => {{\n{script}\n}})();"
     html = html.replace(f'<script src="./{code}"></script>', f"<script>{scoped_script}</script>{navigation_script()}")
     html = html.replace('<script src="./update-client.js"></script>', "")
-    return html.replace('</body>', f'{frame_height_script()}</body>', 1)
+    return html.replace('</body>', f'{cross_page_navigation_script()}{frame_height_script()}</body>', 1)
 
 
 def page_document(view: str) -> str:
@@ -190,11 +208,16 @@ def page_document(view: str) -> str:
     return initial.replace("</head>", f"{bootstrap}</head>", 1)
 
 
-def prototype_document(folder: Path) -> str:
+def prototype_document(folder: Path, *, active: str | None = None) -> str:
     """Embed one prototype variant with the same compact data bundle."""
     html = read_from(folder, "index.html")
     script = read_from(folder, "app.js")
     css = read_from(folder, "style.css")
+    if folder == PROTOTYPE_MAIN:
+        # The public component and Streamlit pages use the same markup and rules.
+        html, count = re.subn(r'<header class="topbar">.*?</header>', render_nav(active or "today"), html, count=1, flags=re.S)
+        if count != 1:
+            raise ValueError("The strategy page is missing its shared navigation slot")
     # Keep the status indicator in a narrow main-column lane.  The date picker
     # intentionally remains the compact dropdown used by the stable version.
     css += """
@@ -235,6 +258,23 @@ def prototype_document(folder: Path) -> str:
     """
     data_literal = safely_embed_json(json.loads(read("site-data.json")))
     update_status_literal = safely_embed_json(published_update_status())
+    from case_store import CaseStore
+    try:
+        published_cases = CaseStore().list_cases(published_only=True)
+        case_search_error = ""
+    except RuntimeError as exc:
+        published_cases = []
+        case_search_error = str(exc)
+    except Exception:
+        published_cases = []
+        case_search_error = "案例数据库暂时无法访问，请稍后重试。"
+    case_search_data = [
+        {key: item.get(key, "") for key in ("id", "title", "strategy", "manager", "case_date", "background", "judgement", "action", "result", "review")}
+        for item in published_cases
+    ]
+    case_literal = safely_embed_json(case_search_data)
+    case_error_literal = safely_embed_json(case_search_error)
+    search_literal = safely_embed_json(st.session_state.pop("case_search_pending", "") or st.query_params.get("q", ""))
     script = script.replace(
         "fetch('../site/site-data.json')",
         "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
@@ -244,12 +284,14 @@ def prototype_document(folder: Path) -> str:
         "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
     )
     script = f"(() => {{\n{script}\n}})();"
+    if folder == PROTOTYPE_MAIN:
+        css += "\n" + nav_css()
     html = html.replace('<link rel="stylesheet" href="./style.css" />', f"<style>{css}</style>")
     html = html.replace(
         '<script src="./app.js"></script>',
-        f"<script>window.__STRATEGY_DATA__={data_literal};window.__STRATEGY_UPDATE_STATUS__={update_status_literal};</script><script>{script}</script>",
+        f"<script>window.__STRATEGY_DATA__={data_literal};window.__STRATEGY_UPDATE_STATUS__={update_status_literal};window.__STRATEGY_CASES__={case_literal};window.__STRATEGY_CASES_ERROR__={case_error_literal};window.__STRATEGY_SEARCH_QUERY__={search_literal};</script><script>{script}</script>",
     )
-    return html.replace('</body>', f'{frame_height_script()}</body>', 1)
+    return html.replace('</body>', f'{cross_page_navigation_script()}{frame_height_script()}</body>', 1)
 
 
 def requested_product() -> str:
@@ -265,17 +307,52 @@ def requested_product() -> str:
         return "prototype"
     if path.endswith("/new"):
         return "new"
+    if path.endswith("/cases"):
+        return "cases"
+    if path.endswith("/admin"):
+        return "admin"
+    if path.endswith("/archive"):
+        return "archive"
     return "main"
 
 
-st.set_page_config(page_title="策略指引 · 原文图谱", page_icon="◌", layout="wide", initial_sidebar_state="collapsed")
+product = requested_product()
+
+page_titles = {
+    "main": "策略指引 · 今日指引",
+    "archive": "策略指引 · 历史回溯",
+    "prototype": "策略指引 · 历史回溯",
+    "new": "策略指引 · 新版",
+    "cases": "策略指引 · 策略案例",
+    "admin": "策略指引 · 后台维护",
+}
+st.set_page_config(page_title=page_titles[product], page_icon="◌", layout="wide", initial_sidebar_state="collapsed")
+pages = {
+    name: st.Page(lambda: None, title=title, url_path="" if name == "main" else name, default=name == "main")
+    for name, title in page_titles.items()
+}
+st.navigation(list(pages.values()), position="hidden").run()
+legacy_page = st.query_params.get("page", "")
+if product == "main" and legacy_page in {"archive", "cases", "admin", "new", "prototype"}:
+    # Old query-string links resolve to one canonical /xxx route.
+    st.query_params.clear()
+    st.switch_page(pages[legacy_page])
 st.markdown(
     "<style>[data-testid='stHeader'], [data-testid='stToolbar'], [data-testid='stDecoration'] {display:none} .block-container {max-width:none;padding:0}</style>",
     unsafe_allow_html=True,
 )
 
-product = requested_product()
-if product == "new":
+if product == "cases":
+    from admin_pages import render_cases_page
+
+    render_cases_page(pages)
+    st.stop()
+elif product == "admin":
+    from admin_pages import render_admin_page
+
+    render_admin_page(pages)
+    st.stop()
+elif product == "new":
     view = st.query_params.get("view", "home")
     if view not in {"home", "archive"}:
         view = "home"
@@ -283,5 +360,15 @@ if product == "new":
 elif product == "prototype":
     document = prototype_document(PROTOTYPE_ARCHIVE)
 else:
-    document = prototype_document(PROTOTYPE_MAIN)
-STRATEGY_COMPONENT(document=document, key=f"strategy-shell-{product}")
+    initial_view = "history" if product == "archive" else "today"
+    document = prototype_document(PROTOTYPE_MAIN, active=initial_view)
+    document = document.replace("window.__STRATEGY_DATA__=", f"window.__STRATEGY_INITIAL_VIEW__='{initial_view}';window.__STRATEGY_DATA__=", 1)
+destination = STRATEGY_COMPONENT(document=document, key=f"strategy-shell-{product}")
+if isinstance(destination, str):
+    destination_url = urlparse(destination)
+    destination_page = {"/": "main", "/archive": "archive", "/cases": "cases"}.get(destination_url.path)
+    if destination_page:
+        if destination_page == "cases":
+            st.session_state.case_focus_id = parse_qs(destination_url.query).get("case", [""])[0]
+        if product != destination_page or destination_page == "cases":
+            st.switch_page(pages[destination_page])

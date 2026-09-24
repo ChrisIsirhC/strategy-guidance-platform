@@ -25,6 +25,10 @@
             bridge({ type: 'streamlit:setFrameHeight', height: message.height });
             return;
           }
+          if (event.source === frame.contentWindow && message.type === 'strategy:navigate' && /^\/(?:$|archive(?:\?|$)|cases(?:\?|$))/.test(message.path || '')) {
+            bridge({ type: 'streamlit:setComponentValue', value: message.path });
+            return;
+          }
           if (message.type === 'streamlit:render' && message.args && typeof message.args.document === 'string') {
             frame.srcdoc = message.args.document;
           }

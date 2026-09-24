@@ -1,6 +1,6 @@
 # 策略指引平台
 
-只读展示策略日表的 Streamlit Cloud 部署版本。页面仅使用 `site/site-data.json` 中的精简展示数据；本机保存的腾讯文档原始响应、审计文件及会话痕迹不会上传。
+策略指引平台的 Streamlit 部署版本。每日原始策略观点仍从腾讯共享表格抓取；经理填写的策略案例与原始观点分层管理。配置 Supabase 后，草稿与发布案例保存在数据库中；未配置时仅在本地开发环境使用测试 JSON。
 
 ## 部署
 
@@ -8,13 +8,25 @@
 2. GitHub Actions 会在北京时间每日 08:00、18:00 检查共享表并自动提交 `site/site-data.json` 的更新；也可在 Actions 页面手动运行“更新策略日表”。
 3. Streamlit Cloud 发现 `main` 分支的新提交后会自动重新部署。
 
-部署后提供三个入口（同一个 Streamlit 应用）：
+部署后提供以下入口（同一个 Streamlit 应用）：
 
 - `/`：红白配色的新版 prototype，作为主站；
+- `/archive`：直接进入主站的历史回溯；主站内的今日／历史切换仍在当前页面完成；
 - `/prototype`：prototype v0 历史存档；
 - `/new`：当前绿色版网站。
+- `/cases`：独立的策略案例页面，只展示已发布案例。
+- `/admin`：策略案例后台。测试阶段用户名为 `test`，密码仅在本地或部署 Secrets 中配置，不提交至公开仓库。
 
-三个入口共用同一份精简数据底稿；主站和两个子站的搜索、日历与历史浏览均在浏览器内完成。
+主站和两个子站共用同一份精简数据底稿；案例不写回共享表格。共享表格快照由 GitHub Actions 提交 `site/site-data.json`、`data/cloud_history`、`data/cloud_sync_state.json` 到仓库，部署实例重启不会删除仓库里的快照。案例测试 JSON 被 `.gitignore` 忽略，**不会自动提交到 GitHub**；未配置 Supabase 时，线上保存／发布按钮禁用，避免云端临时文件造成假成功。后台测试账号密码从 Streamlit Secrets 读取，不存放在仓库代码中。
+
+## 案例后台首次配置
+
+1. 复制 `.streamlit/secrets.example.toml` 为 `.streamlit/secrets.toml`，填入测试密码。
+2. 在 Supabase SQL Editor 执行 `supabase_schema.sql`。
+3. 在 Streamlit Cloud 的 Secrets 中配置 `ADMIN_USERNAME`、`ADMIN_PASSWORD`、`SUPABASE_URL` 和服务端使用的 `SUPABASE_SECRET_KEY`。旧项目兼容 `SUPABASE_SERVICE_ROLE_KEY`，不要使用公开的 anon/publishable key。
+4. 访问 `/admin` 登录，保存草稿或发布案例；已发布案例会出现在 `/cases`。
+
+服务端密钥不能写入前端，也不要提交到 GitHub。`supabase_schema.sql` 只建立案例表，原始共享表格数据仍由现有抓取程序维护。
 
 ## 本地运行
 
@@ -22,4 +34,6 @@
 C:\Users\chris\AppData\Local\Programs\Python\Python313\python.exe -m streamlit run app.py
 ```
 
-本机需要保留访问级更新、原始审计存档与即时定时任务时，仍使用 `启动策略指引平台.bat`。
+`streamlit run app.py` 本身只读已发布的 `site/site-data.json`，本地刷新网页不会抓取腾讯表格。`启动策略指引平台.bat` 启动的是另一个本地服务（4174 端口），它会在启动、访问和每日 08:00／18:00 时按时段判断是否检查并增量抓取。Streamlit Cloud 的日表依赖 GitHub Actions 同步后的仓库提交；与 Supabase 案例库是两条独立数据链。
+
+案例发布写入 Supabase 后，新访问或刷新 `/cases` 可直接读到最新已发布内容，无需 Git 提交；草稿只在后台可见。配置之前本机使用忽略入库的测试 JSON，云端禁止保存。公开环境中的测试账号只是过渡方案，正式对外使用前务必换强密码并升级独立账号／权限控制。
