@@ -15,6 +15,13 @@
         const frame = document.getElementById('strategy-frame');
         const parent = window.parent;
         const bridge = message => parent.postMessage({ isStreamlitMessage: true, ...message }, '*');
+        let documentSource = null;
+        let currentRoute = null;
+        const deliverRoute = () => {
+          if (!frame.contentWindow || !currentRoute) return;
+          frame.contentWindow.postMessage({ type: 'strategy:route', route: currentRoute }, '*');
+        };
+        frame.addEventListener('load', deliverRoute);
 
         // This document is a real Streamlit custom component.  The page is
         // rendered in a child iframe so its long history timeline can report
@@ -30,7 +37,13 @@
             return;
           }
           if (message.type === 'streamlit:render' && message.args && typeof message.args.document === 'string') {
-            frame.srcdoc = message.args.document;
+            currentRoute = message.args.route || {view: 'today'};
+            if (documentSource !== message.args.document) {
+              documentSource = message.args.document;
+              frame.srcdoc = documentSource;
+            } else {
+              deliverRoute();
+            }
           }
         });
 

@@ -274,7 +274,9 @@ def prototype_document(folder: Path, *, active: str | None = None) -> str:
     ]
     case_literal = safely_embed_json(case_search_data)
     case_error_literal = safely_embed_json(case_search_error)
-    search_literal = safely_embed_json(st.session_state.pop("case_search_pending", "") or st.query_params.get("q", ""))
+    # Search is route state, not document source: it must not remount the
+    # public iframe when a visitor moves between the three public routes.
+    search_literal = safely_embed_json("")
     script = script.replace(
         "fetch('../site/site-data.json')",
         "Promise.resolve({ ok: true, json: async () => window.__STRATEGY_DATA__ })",
@@ -342,12 +344,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-if product == "cases":
-    from admin_pages import render_cases_page
-
-    render_cases_page(pages)
-    st.stop()
-elif product == "admin":
+if product == "admin":
     from admin_pages import render_admin_page
 
     render_admin_page(pages)
@@ -360,10 +357,19 @@ elif product == "new":
 elif product == "prototype":
     document = prototype_document(PROTOTYPE_ARCHIVE)
 else:
-    initial_view = "history" if product == "archive" else "today"
-    document = prototype_document(PROTOTYPE_MAIN, active=initial_view)
-    document = document.replace("window.__STRATEGY_DATA__=", f"window.__STRATEGY_INITIAL_VIEW__='{initial_view}';window.__STRATEGY_DATA__=", 1)
-destination = STRATEGY_COMPONENT(document=document, key=f"strategy-shell-{product}")
+    # One public shell across all three routes.  Streamlit still owns the URL,
+    # while the component keeps the nav/sidebar and existing animations alive.
+    document = prototype_document(PROTOTYPE_MAIN, active="today")
+route = {"view": {"main": "today", "archive": "history", "cases": "cases"}.get(product, "today")}
+if product == "cases":
+    route["case"] = st.session_state.pop("case_focus_id", "") or st.query_params.get("case", "")
+if product == "main":
+    route["q"] = st.session_state.pop("case_search_pending", "") or st.query_params.get("q", "")
+destination = STRATEGY_COMPONENT(
+    document=document,
+    route=route,
+    key="strategy-shell-public" if product in {"main", "archive", "cases"} else f"strategy-shell-{product}",
+)
 if isinstance(destination, str):
     destination_url = urlparse(destination)
     destination_page = {"/": "main", "/archive": "archive", "/cases": "cases"}.get(destination_url.path)
