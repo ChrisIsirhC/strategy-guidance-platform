@@ -1,13 +1,8 @@
 {
-  "checkedAt": "2026-11-17T04:02:28+08:00",
+  "checkedAt": "2026-11-17T14:52:44+08:00",
   "updatedAt": "2026-11-17T04:02:28+08:00",
-  "slot": "2026-11-16@18",
-  "latestLocal": "261110",
-  "candidateCount": 5,
-  "updatedTabs": [
-    "261111",
-    "261112",
-    "261113",
-    "261116"
-  ]
+  "slot": "2026-11-17@08",
+  "latestLocal": "261116",
+  "candidateCount": 1,
+  "updatedTabs": []
 }
